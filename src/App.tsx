@@ -1754,37 +1754,82 @@ export default function App() {
 
       {/* ---------- CABECERA ---------- */}
       <header className="lg:sticky lg:top-0 z-40 border-b border-slate-800/80 bg-slate-950/95 backdrop-blur pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
-        <div className="max-w-7xl mx-auto px-3 py-2.5 sm:px-6 sm:py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4">
-          {/* Fila superior móvil: logo + título + estado + acceso admin/música */}
-          <div className="flex items-center justify-between gap-2 min-w-0">
-            <div className="flex min-w-0 items-center gap-2.5">
+        <div className="max-w-7xl mx-auto px-3 py-2.5 sm:px-6 sm:py-3 flex flex-col gap-2 sm:gap-2.5">
+          {/* Fila principal: Logo + Nombre completo de la peña + Acciones (en tablet/escritorio) */}
+          <div className="flex items-center justify-between gap-3 min-w-0">
+            <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
               <img
                 src="/icons/icon-192.png"
                 alt={syndicate.name}
-                className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl object-cover border border-amber-500/40 shadow-md shadow-amber-500/15"
+                className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-xl object-cover border border-amber-500/40 shadow-md shadow-amber-500/15"
               />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-white truncate" title={syndicate.name}>
-                    {syndicate.name}
-                  </span>
-                  <span className="hidden sm:inline-flex text-xs px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium whitespace-nowrap shrink-0">
-                    {paidThisMonth.size}/{syndicate.members.length} pagados en {monthNameFromKey(activeMonth)}
+              <div className="min-w-0 flex-1">
+                <div className="text-[15px] sm:text-lg font-extrabold tracking-tight text-white leading-tight break-words">
+                  {syndicate.name}
+                </div>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                  <span className="hidden sm:inline text-xs text-slate-400">Control Oficial de Lotería Primitiva</span>
+                  <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 font-medium">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 sm:hidden ${serverError ? 'bg-rose-400' : isSyncing ? 'bg-amber-400 animate-ping' : 'bg-emerald-400'}`}
+                      title={serverError ? 'Sin conexión' : isSyncing ? 'Sincronizando...' : 'En vivo'}
+                    />
+                    <span className="sm:px-2 sm:py-0.5 sm:rounded sm:bg-emerald-500/10 sm:border sm:border-emerald-500/30">
+                      {paidThisMonth.size}/{syndicate.members.length} pagados · {monthNameFromKey(activeMonth)}
+                    </span>
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 sm:hidden truncate mt-0.5">
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${serverError ? 'bg-rose-400' : isSyncing ? 'bg-amber-400 animate-ping' : 'bg-emerald-400'}`}
-                    title={serverError ? 'Sin conexión' : isSyncing ? 'Sincronizando...' : 'En vivo'}
-                  />
-                  <span className="truncate">{paidThisMonth.size}/{syndicate.members.length} pagados · {monthNameFromKey(activeMonth)}</span>
-                </div>
-                <div className="text-xs text-slate-400 hidden sm:block">Control Oficial de Lotería Primitiva</div>
               </div>
             </div>
 
-            {/* Controles rápidos compactos en móvil (fila 1) */}
-            <div className="flex sm:hidden items-center gap-1.5 shrink-0">
+            {/* Botones de acción en tablet/escritorio */}
+            <div className="hidden sm:flex items-center justify-end gap-2 shrink-0">
+              <div
+                className="hidden md:flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded-lg bg-slate-900 border border-slate-800 text-slate-400 shrink-0"
+                title={serverError ? 'El servidor no responde: se muestran los datos guardados localmente' : `Sincronizado. Última actualización: ${lastSyncTime || 'Conectado'}`}
+              >
+                <span className={`w-2 h-2 rounded-full ${serverError ? 'bg-rose-400' : isSyncing ? 'bg-amber-400 animate-ping' : 'bg-emerald-400 animate-pulse'}`} />
+                <span>{serverError ? 'Sin conexión' : isSyncing ? 'Sincronizando...' : 'En vivo'}</span>
+              </div>
+
+              <button
+                onClick={() => void handleToggleAdminMode()}
+                className={`h-9 px-3 text-xs font-semibold rounded-lg transition-all border shrink-0 whitespace-nowrap flex items-center justify-center gap-1.5 ${isAdmin ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'}`}
+                title={isAdmin ? 'Cambiar a vista de socio' : 'Identificarse como administrador'}
+              >
+                {isAdmin ? <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> : <Eye className="w-3.5 h-3.5 shrink-0" />}
+                <span className="hidden xl:inline">{isAdmin ? 'Modo Administrador' : 'Modo Consulta (Socio)'}</span>
+                <span className="xl:hidden">{isAdmin ? 'Admin' : 'Socio'}</span>
+              </button>
+
+              {isAdmin && (
+                <button onClick={() => setShowPermissionsModal(true)} className="h-9 px-2.5 text-xs font-semibold text-amber-300 bg-amber-950/70 hover:bg-amber-900 border border-amber-500/40 rounded-lg shrink-0 whitespace-nowrap flex items-center justify-center gap-1" title="Gestión de permisos y PIN">
+                  <Shield className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden md:inline">Permisos</span>
+                </button>
+              )}
+
+              <button onClick={() => void handleExportData()} className="flex h-9 p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg shrink-0 items-center justify-center" title="Descargar copia de seguridad (JSON)">
+                <Download className="w-4 h-4 shrink-0" />
+              </button>
+              {isAdmin && (
+                <button onClick={() => importInputRef.current?.click()} className="flex h-9 p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg shrink-0 items-center justify-center" title="Importar copia de seguridad (JSON)">
+                  <Upload className="w-4 h-4 shrink-0" />
+                </button>
+              )}
+
+              <button onClick={() => void generateWhatsAppMessage()} className="h-9 px-3 text-xs font-medium text-emerald-300 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/60 rounded-lg shrink-0 whitespace-nowrap flex items-center justify-center gap-1.5" title="Copiar resumen para WhatsApp">
+                <Share2 className="w-3.5 h-3.5 shrink-0" />
+                <span>{copiedNotification ? '¡Copiado!' : 'Compartir'}</span>
+              </button>
+
+              {canAddBets && (
+                <button onClick={() => openNewDrawModal()} className="h-9 px-3.5 border border-amber-400/80 text-xs font-semibold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 rounded-lg hover:from-amber-300 hover:to-amber-400 transition-colors whitespace-nowrap shrink-0 shadow-md flex items-center justify-center gap-1.5" title={isAdmin ? 'Nuevo Boleto' : 'Añadir Mi Boleto'}>
+                  <Plus className="w-3.5 h-3.5 shrink-0" />
+                  <span>{isAdmin ? 'Nuevo Boleto' : 'Añadir Mi Boleto'}</span>
+                </button>
+              )}
+
               {isMusicPlaying && (
                 <button
                   type="button"
@@ -1795,115 +1840,34 @@ export default function App() {
                   onPointerDown={(event) => event.stopPropagation()}
                   aria-label="Pausar música"
                   title="Música reproduciéndose (clic para pausar)"
-                  className="h-8 w-8 rounded-lg border bg-amber-500/15 text-amber-300 border-amber-500/40 flex items-center justify-center shrink-0"
+                  className="h-9 px-2.5 text-xs font-semibold rounded-lg border bg-amber-500/15 text-amber-300 border-amber-500/40 hover:bg-amber-500/25 transition-colors whitespace-nowrap shrink-0 flex items-center justify-center gap-1.5"
                 >
-                  <Volume2 className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                  <Volume2 className="w-3.5 h-3.5 text-amber-400 animate-pulse shrink-0" />
+                  <span>Pausar</span>
                 </button>
               )}
-              {isAdmin && (
-                <button
-                  onClick={() => setShowPermissionsModal(true)}
-                  className="h-8 w-8 text-amber-300 bg-amber-950/70 hover:bg-amber-900 border border-amber-500/40 rounded-lg flex items-center justify-center shrink-0"
-                  title="Gestión de permisos y PIN"
-                  aria-label="Permisos"
-                >
-                  <Shield className="w-3.5 h-3.5" />
-                </button>
-              )}
-              <button
-                onClick={() => void handleToggleAdminMode()}
-                className={`h-8 px-2.5 text-[11px] font-semibold rounded-lg transition-all border shrink-0 whitespace-nowrap flex items-center gap-1 ${isAdmin ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'}`}
-                title={isAdmin ? 'Cambiar a vista de socio' : 'Identificarse como administrador'}
-              >
-                {isAdmin ? <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> : <Eye className="w-3.5 h-3.5 shrink-0" />}
-                <span>{isAdmin ? 'Admin' : 'Socio'}</span>
-              </button>
             </div>
           </div>
 
-          {/* Navegación de escritorio */}
-          <nav className="hidden lg:flex flex-wrap items-center gap-x-4 xl:gap-x-5 gap-y-1 text-sm font-medium text-slate-400">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`transition-colors whitespace-nowrap shrink-0 py-1 flex items-center gap-1.5 ${activeTab === tab.id ? 'text-amber-400 font-semibold border-b-2 border-amber-400' : 'hover:text-white'}`}
-              >
-                {tab.id === 'ai' && <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
-                {tab.label}
-                {tab.id === 'sorteos' ? ` (${syndicate.draws.length})` : ''}
-                {tab.id === 'cuotas' && syndicate.members.length > paidThisMonth.size ? ` (${syndicate.members.length - paidThisMonth.size})` : ''}
-              </button>
-            ))}
-          </nav>
-
-          {/* Fila inferior móvil: solo Compartir y Nuevo Boleto bien equilibrados */}
-          <div className={`grid sm:hidden ${canAddBets ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
-            <button
-              onClick={() => void generateWhatsAppMessage()}
-              className="h-9 px-3 text-xs font-semibold text-emerald-300 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/60 rounded-lg whitespace-nowrap flex items-center justify-center gap-1.5"
-              title="Copiar resumen para WhatsApp"
-            >
-              <Share2 className="w-3.5 h-3.5 shrink-0" />
-              <span>{copiedNotification ? '¡Copiado!' : 'Compartir'}</span>
-            </button>
-            {canAddBets && (
-              <button
-                onClick={() => openNewDrawModal()}
-                className="h-9 px-3 border border-amber-400/80 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 rounded-lg hover:from-amber-300 hover:to-amber-400 transition-colors whitespace-nowrap shadow-md flex items-center justify-center gap-1.5"
-                title={isAdmin ? 'Nuevo Boleto' : 'Añadir Mi Boleto'}
-              >
-                <Plus className="w-3.5 h-3.5 shrink-0" />
-                <span>{isAdmin ? 'Nuevo Boleto' : 'Añadir Boleto'}</span>
-              </button>
-            )}
-          </div>
-
-          {/* Botones de acción en tablet/escritorio */}
-          <div className="hidden sm:flex items-center justify-end gap-2 shrink-0">
-            <div
-              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded-lg bg-slate-900 border border-slate-800 text-slate-400 shrink-0"
-              title={serverError ? 'El servidor no responde: se muestran los datos guardados localmente' : `Sincronizado. Última actualización: ${lastSyncTime || 'Conectado'}`}
-            >
-              <span className={`w-2 h-2 rounded-full ${serverError ? 'bg-rose-400' : isSyncing ? 'bg-amber-400 animate-ping' : 'bg-emerald-400 animate-pulse'}`} />
-              <span>{serverError ? 'Sin conexión' : isSyncing ? 'Sincronizando...' : 'En vivo'}</span>
-            </div>
-
+          {/* Fila de acciones en móvil: deja la fila superior 100% libre para el nombre de la peña */}
+          <div className="flex sm:hidden items-center gap-1.5">
             <button
               onClick={() => void handleToggleAdminMode()}
-              className={`h-9 px-3 text-xs font-semibold rounded-lg transition-all border shrink-0 whitespace-nowrap flex items-center justify-center gap-1.5 ${isAdmin ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'}`}
+              className={`h-9 px-2.5 text-[11px] font-semibold rounded-lg transition-all border shrink-0 whitespace-nowrap flex items-center justify-center gap-1 ${isAdmin ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'}`}
               title={isAdmin ? 'Cambiar a vista de socio' : 'Identificarse como administrador'}
             >
               {isAdmin ? <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> : <Eye className="w-3.5 h-3.5 shrink-0" />}
-              <span className="hidden xl:inline">{isAdmin ? 'Modo Administrador' : 'Modo Consulta (Socio)'}</span>
-              <span className="xl:hidden">{isAdmin ? 'Admin' : 'Socio'}</span>
+              <span>{isAdmin ? 'Admin' : 'Socio'}</span>
             </button>
 
             {isAdmin && (
-              <button onClick={() => setShowPermissionsModal(true)} className="h-9 px-2.5 text-xs font-semibold text-amber-300 bg-amber-950/70 hover:bg-amber-900 border border-amber-500/40 rounded-lg shrink-0 whitespace-nowrap flex items-center justify-center gap-1" title="Gestión de permisos y PIN">
-                <Shield className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden md:inline">Permisos</span>
-              </button>
-            )}
-
-            <button onClick={() => void handleExportData()} className="flex h-9 p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg shrink-0 items-center justify-center" title="Descargar copia de seguridad (JSON)">
-              <Download className="w-4 h-4 shrink-0" />
-            </button>
-            {isAdmin && (
-              <button onClick={() => importInputRef.current?.click()} className="flex h-9 p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg shrink-0 items-center justify-center" title="Importar copia de seguridad (JSON)">
-                <Upload className="w-4 h-4 shrink-0" />
-              </button>
-            )}
-
-            <button onClick={() => void generateWhatsAppMessage()} className="h-9 px-3 text-xs font-medium text-emerald-300 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/60 rounded-lg shrink-0 whitespace-nowrap flex items-center justify-center gap-1.5" title="Copiar resumen para WhatsApp">
-              <Share2 className="w-3.5 h-3.5 shrink-0" />
-              <span>{copiedNotification ? '¡Copiado!' : 'Compartir'}</span>
-            </button>
-
-            {canAddBets && (
-              <button onClick={() => openNewDrawModal()} className="h-9 px-3.5 border border-amber-400/80 text-xs font-semibold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 rounded-lg hover:from-amber-300 hover:to-amber-400 transition-colors whitespace-nowrap shrink-0 shadow-md flex items-center justify-center gap-1.5" title={isAdmin ? 'Nuevo Boleto' : 'Añadir Mi Boleto'}>
-                <Plus className="w-3.5 h-3.5 shrink-0" />
-                <span>{isAdmin ? 'Nuevo Boleto' : 'Añadir Mi Boleto'}</span>
+              <button
+                onClick={() => setShowPermissionsModal(true)}
+                className="h-9 w-9 text-amber-300 bg-amber-950/70 hover:bg-amber-900 border border-amber-500/40 rounded-lg flex items-center justify-center shrink-0"
+                title="Gestión de permisos y PIN"
+                aria-label="Permisos"
+              >
+                <Shield className="w-3.5 h-3.5" />
               </button>
             )}
 
@@ -1917,14 +1881,55 @@ export default function App() {
                 onPointerDown={(event) => event.stopPropagation()}
                 aria-label="Pausar música"
                 title="Música reproduciéndose (clic para pausar)"
-                className="h-9 px-2.5 text-xs font-semibold rounded-lg border bg-amber-500/15 text-amber-300 border-amber-500/40 hover:bg-amber-500/25 transition-colors whitespace-nowrap shrink-0 flex items-center justify-center gap-1.5"
+                className="h-9 w-9 rounded-lg border bg-amber-500/15 text-amber-300 border-amber-500/40 flex items-center justify-center shrink-0"
               >
-                <Volume2 className="w-3.5 h-3.5 text-amber-400 animate-pulse shrink-0" />
-                <span>Pausar</span>
+                <Volume2 className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              </button>
+            )}
+
+            <button
+              onClick={() => void generateWhatsAppMessage()}
+              className="h-9 flex-1 px-2 text-[11px] font-semibold text-emerald-300 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/60 rounded-lg whitespace-nowrap flex items-center justify-center gap-1 min-w-0"
+              title="Copiar resumen para WhatsApp"
+            >
+              <Share2 className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{copiedNotification ? '¡Copiado!' : 'Compartir'}</span>
+            </button>
+
+            {canAddBets && (
+              <button
+                onClick={() => openNewDrawModal()}
+                className="h-9 flex-1 px-2 border border-amber-400/80 text-[11px] font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 rounded-lg hover:from-amber-300 hover:to-amber-400 transition-colors whitespace-nowrap shadow-md flex items-center justify-center gap-1 min-w-0"
+                title={isAdmin ? 'Nuevo Boleto' : 'Añadir Mi Boleto'}
+              >
+                <Plus className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{isAdmin ? 'Boleto' : 'Boleto'}</span>
               </button>
             )}
           </div>
         </div>
+
+        {/* Navegación de escritorio en barra propia: nunca pisa ni comprime el nombre de la peña */}
+        <nav className="hidden lg:block border-t border-slate-800/70 bg-slate-950/70">
+          <div className="max-w-7xl mx-auto px-6 flex items-center gap-6 text-sm font-medium text-slate-400">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`transition-colors whitespace-nowrap shrink-0 py-2.5 flex items-center gap-1.5 border-b-2 ${
+                  activeTab === tab.id
+                    ? 'text-amber-400 font-semibold border-amber-400'
+                    : 'border-transparent hover:text-white'
+                }`}
+              >
+                {tab.id === 'ai' && <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+                {tab.label}
+                {tab.id === 'sorteos' ? ` (${syndicate.draws.length})` : ''}
+                {tab.id === 'cuotas' && syndicate.members.length > paidThisMonth.size ? ` (${syndicate.members.length - paidThisMonth.size})` : ''}
+              </button>
+            ))}
+          </div>
+        </nav>
       </header>
 
       {/* ---------- PESTAÑAS MÓVILES Y TABLET (SIN DESPLAZAMIENTO HORIZONTAL) ---------- */}

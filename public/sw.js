@@ -1,6 +1,6 @@
 /* Service worker con actualización inmediata (network-first para HTML, JS y CSS). */
 
-const CACHE_NAME = 'primitiva-temes-shell-v7';
+const CACHE_NAME = 'primitiva-temes-shell-v8';
 const APP_SHELL = [
   '/manifest.webmanifest',
   '/icons/icon-192.png',
