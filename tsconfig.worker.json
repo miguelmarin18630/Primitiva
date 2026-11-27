@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": ["@cloudflare/workers-types"],
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": [
+    "worker/**/*.ts",
+    "src/lib/serverApi.ts",
+    "src/lib/results.ts",
+    "src/lib/finance.ts",
+    "src/data/initialSyndicateData.ts"
+  ]
+}

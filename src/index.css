@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+/* Un elemento ancho (tabla, cabecera, bolas) no debe desplazar la página entera en móvil.
+   `clip` no crea contenedor de desplazamiento, así que la cabecera `sticky` sigue funcionando. */
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+  background-color: #020617;
+}
+
+body {
+  touch-action: pan-y pinch-zoom;
+  background-color: #0f172a;
+}
+
+/* Barra de pestañas: se desplaza por dentro, nunca desplaza la página. */
+.no-scrollbar {
+  touch-action: pan-x pan-y;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* En el acceso directo PWA se usa el viewport completo (incluido el safe area). */
+@supports (height: 100dvh) {
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-toast {
+  animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.18s ease-out forwards;
+}
+
+/* Quien pida menos movimiento en el sistema ve las mismas pantallas sin animaciones. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-toast,
+  .animate-fadeIn {
+    animation: none;
+  }
+}

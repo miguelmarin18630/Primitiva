@@ -1,0 +1,20 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+*.tmp
+.env*
+!.env.example
+
+# Estado persistido en el servidor local: contiene el PIN y fotos de boletos.
+src/data/syndicate_store.json
+
+# Estado local de Wrangler y secretos de desarrollo.
+.wrangler/
+.dev.vars*
+
+# Fotos originales entregadas por la peña; las publicadas están en public/assets/boletos/
+Apuestas/
+PHOTO-2026-11-24-08-09-08.jpg

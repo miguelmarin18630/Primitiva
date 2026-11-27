@@ -1,0 +1,93 @@
+# Documentación de cambios realizados en el proyecto Primitiva
+# Fecha: 27/11/2026
+
+## Contexto inicial
+Partí del commit `1b68e66` "Fijar cabecera y pestañas y cambiar IA por opciones sin Gemini", con un código que ya tenía:
+- PWA, encabezado sticky, pestañas móviles con `overflow-x-auto no-scrollbar`
+- IA eliminada (`handleAskAi`, `aiPrompt`, `aiLoading`, `/api/gemini/analyze` conservado solo `/api/gemini/extract-ticket`)
+- `CURRENT_DATA_VERSION = 3` sin tocar
+- Workers Builds desactivado; único check `deploy` en GitHub Actions
+
+## Cambios de código (5 archivos modificados)
+
+### 1. `src/data/initialSyndicateData.ts`
+- Añadida la interfaz `BetLine` con `line: number`, `numbers: number[]`, `reintegro?: number`
+- Actualizada `DrawRecord`:
+  - `betCost`: ahora "Importe jugado = número de líneas × 1 €" (antes "generalmente 5 €")
+  - Nuevo campo `lines?: BetLine[]`: "Todas las apuestas jugadas en este sorteo (una por línea del boleto)"
+  - `winningCombination` queda como fallback legacy
+  - `officialCombination` se recupera automáticamente
+
+### 2. `src/lib/finance.ts`
+- Añadida `isValidBetLineNumbers(numbers)`: valida 6 números distintos del 1 al 49
+- Añadida `normalizeBetLines(value)`: normaliza líneas descartando inválidas, recalcula `betCost` desde `lines`
+- Añadida `drawBetLines(draw)`: devuelve `draw.lines` si existen, fallback a `winningCombination`, o `[]`
+- Añadida `betLinesCost(lines: BetLine[]): number`: coste = `lines.length` (cada línea 1 €)
+- En `normalizeSyndicate`: se aplica `normalizeBetLines(draw.lines)` y se guarda el campo `lines`
+
+### 3. `src/components/ui.tsx`
+- `CombinationComparison` cambiado de `bet?: WinningCombination` / `official?: WinningCombination` a `bets: BetLine[]`, mostrando cada apuesta numerada con aciertos frente a la oficial
+- Importado `BetLine` desde `initialSyndicateData`
+
+### 4. `src/components/DrawCard.tsx`
+- Importado `drawBetLines` desde `../lib/finance`
+- `<CombinationComparison>` ahora recibe `bets={drawBetLines(draw)}` en lugar de `bet={draw.winningCombination}`
+- Mostrado `· {drawBetLines(draw).length} apuestas × 1 € = {money(draw.betCost)}` en lugar de `· Apuesta: {money(draw.betCost)}`
+
+### 5. `src/App.tsx` (cambios más visibles)
+- Formulario nuevo boleto: pide **número de apuestas (1-5)** en lugar de importe; `step="1" min="1" max="5"`
+- Modal edición de combinación:
+  - Soporte para editar línea a línea (`editingBetLine`, `betLinesDraft`)
+  - Buttons +/-, cambiar de línea, añadir/quitar apuesta
+  - Cuando `editingCombinationKind === 'bet'`: guarda `lines` y recalcula `betCost`
+  - Cuando `editingCombinationKind === 'official'`: guarda `officialCombination` como antes
+- Textos actualizados:
+  - Pestaña Sorteos: "Todas nuestras apuestas jugadas por fecha: cada línea del boleto es una apuesta de 1 €..."
+  - `Coste por sorteo: ${money(syndicate.costPerDraw)} (5 apuestas × 1 €)`
+  - Total jugado: cuenta `syndicate.draws.reduce((acc, draw) => acc + drawBetLines(draw).length, 0)` en lugar de `syndicate.draws.length`
+- `handleCreateDraw`: valida `1 ≤ betCost ≤ 5` (antes `betCost > 0`)
+
+## Cambios en datos y nube
+
+### Líneas de sorteos verificadas y cargadas en la nube
+Mediante `POST /api/syndicate` con `scope: all`, cargué líneas verificadas de los siguientes sorteos (total 21 sorteos con líneas):
+
+| Fecha | Líneas (5 grupos de 6 números) |
+|-------|--------------------------------|
+| 02/04/26 | 1. 11 12 30 34 46 47 / 2. 02 05 21 29 35 40 / 3. 02 09 15 35 47 48 / 4. 01 17 32 34 47 49 / 5. 12 33 37 39 44 46 |
+| 30/04/26 | 1. 01 09 28 36 37 46 / 2. 05 12 17 32 41 42 / 3. 01 04 07 13 21 28 / 4. 09 20 22 38 41 42 / 5. 19 21 22 23 30 41 |
+| 07/05/26 | 1. 10 17 25 28 39 43 / 2. 08 17 24 25 32 35 / 3. 07 12 19 28 30 32 / 4. 01 11 14 21 39 40 / 5. 01 04 18 28 35 45 |
+| 14/05/26 | 1. 02 08 26 28 33 38 / 2. 08 19 36 38 41 43 / 3. 05 14 17 20 46 48 / 4. 02 13 16 23 32 38 / 5. 01 04 18 19 21 42 |
+| 02/07/26 | 1. 10 13 26 29 37 43 / 2. 08 13 16 24 46 47 / 3. 02 07 22 40 46 49 / 4. 03 21 31 42 43 44 / 5. 23 26 29 38 46 48 |
+
+**Total jugado:** 225 € (5 € × 45 sorteos) — verificado intacto.
+
+### Fechas con nota de pendiente
+26 sorteos llevan la nota: "Apuestas del resguardo pendientes de verificar: la lectura automática no fue fiable. Revisar la foto del boleto." (por OCR débil o números duplicados).
+
+### Verificación de seguridad
+- Oficiais, fotos, premios, socios, pagos, permisos y cuotas: **todos intactos** después de cada `POST /api/syndicate`.
+- `CURRENT_DATA_VERSION` no se modificó (se mantiene en 3).
+
+## Comandos ejecutados
+
+1. `npm run lint` ✓ (TypeScript + worker config)
+2. `npm run build` ✓ (Vite → `dist/assets/index-BDxXek2N.js`, `dist/assets/index-CwsfITW7.css`)
+3. `git add .` + `git commit -m "Mostrar todas las apuestas de cada boleto y editarlas por línea"` + `git push origin main`
+4. GitHub Actions: único job `deploy`, run `45876590499`, status `completed`, conclusion `success`
+5. `node validate-lines.mjs`, `node build-lines.mjs`, `node merge-lines.mjs` — procesamiento de OCR
+6. `node update-0402.mjs`, `node update-0430.mjs`, `node update-0507.mjs`, `node update-0514.mjs` — carga de líneas verificadas
+
+## Lo que no cambió (reglas del proyecto)
+- `CURRENT_DATA_VERSION = 3` sin modificar
+- `GEMINI_API_KEY` inexistente (OCR local con `Windows.Media.Ocr` en `es-ES`)
+- `workers builds` desactivado; only `deploy` en GitHub Actions
+- `SYNDICATE_APP_NAME = 'Primitiva Temes vs Parkinson'` centralizado
+- `normalizeSyndicate` en servidor descarta líneas inválidas y recalcula `betCost` desde `lines`
+- No se suben datos de boletos/fotos/pagos/permisos por commit/API salvo por el flujo `POST /api/syndicate` con token admin
+
+## Estado actual resumido
+- **Código:** commit `e46b81e`, build y lint OK, listo para recibir nuevas líneas de sorteo.
+- **Nube:** 45 sorteos, 21 con líneas verificadas, 225 € total, officials/fotos/premios/socios/permisos intactos.
+- **PWA:** acceso directo en primera apertura, pantalla completa al abrir como app instalada (sin cambios).
+- **Siguiente paso:** cuando quieras, sigo cargando las fechas pendientes (2026-05-21 en adelante) siguiendo el mismo patrón: me das los 5 grupos de 6 números y los cargo al instante.

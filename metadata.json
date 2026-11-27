@@ -1,0 +1,8 @@
+{
+  "name": "Peña Lotería TeMe vs Parki",
+  "description": "Control integral de la peña TeMe vs Parki: socios, cuotas, sorteos, premios, caja arrastrada y reparto equitativo con sesiones protegidas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

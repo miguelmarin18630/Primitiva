@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "primitiva",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-11-26",
+  "routes": [{ "pattern": "primitiva.marinweb.org", "custom_domain": true }],
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "SYNDICATE", "class_name": "SyndicateStore" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SyndicateStore"] }],
+  "build": { "command": "npm run build" },
+  // Cloudflare programa en UTC. Se lanza a las 21:00 y 22:00 UTC y el handler
+  // sólo actúa cuando en Madrid son las 23:00 (hora de verano e invierno).
+  "triggers": {
+    "crons": ["0 21 * * *", "0 22 * * *"]
+  },
+  "vars": { "GEMINI_MODEL": "gemini-2.5-flash" }
+}
