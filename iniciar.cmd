@@ -6,10 +6,36 @@ REM   - Servidor de produccion local (npm start, puerto 3001)
 REM   - Worker de Cloudflare en local (npm run dev:cloud, puerto 8787)
 REM Si el script ya se habia ejecutado, cierra primero esos tres puertos para
 REM que no aparezca el error EADDRINUSE al volver a iniciarlos.
-REM Cada pestaña hace cd a la carpeta del script antes de ejecutar el comando.
+REM Nota: npm run dev:cloud solo levanta una vista previa local; para publicar en
+REM primitiva.marinweb.org hay que desplegar en Cloudflare (GitHub Actions o npm run deploy).
 
 set "ROOT=%~dp0"
 set "ROOT=%ROOT:~0,-1%"
+cd /d "%ROOT%"
+
+if not exist "node_modules\.bin\tsx.cmd" goto :install_deps
+if not exist "node_modules\.bin\vite.cmd" goto :install_deps
+goto :check_build
+
+:install_deps
+echo Faltan dependencias en node_modules. Ejecutando npm install...
+call npm install
+if errorlevel 1 (
+  echo [ERROR] Fallo npm install. Revisa los mensajes de arriba.
+  pause
+  exit /b 1
+)
+
+:check_build
+if not exist "dist\index.html" (
+  echo Compilando dist/ para el servidor local ^(npm start^)...
+  call npm run build
+  if errorlevel 1 (
+    echo [ERROR] Fallo npm run build. Revisa los mensajes de arriba.
+    pause
+    exit /b 1
+  )
+)
 
 echo Cerrando instancias anteriores en los puertos 3100, 3001 y 8787...
 call :free_port 3100

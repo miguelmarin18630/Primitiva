@@ -89,6 +89,15 @@ if "!NEED_INSTALL!"=="1" (
   )
 )
 
+if not "%BEFORE_HEAD%"=="%AFTER_HEAD%" (
+  echo.
+  echo Compilando nueva version local ^(npm run build^)...
+  call npm run build
+  if errorlevel 1 (
+    echo [AVISO] Hubo un problema compilando dist/.
+  )
+)
+
 echo.
 echo ========================================================
 if "%BEFORE_HEAD%"=="%AFTER_HEAD%" (
