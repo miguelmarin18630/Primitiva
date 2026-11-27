@@ -424,9 +424,8 @@ export default function App() {
   );
 
   const upcomingDraws = useMemo(() => {
-    const today = todayISO();
     return syndicate.draws
-      .filter((draw) => !draw.officialCombination && (draw.status === 'pendiente' || draw.date >= today))
+      .filter((draw) => !draw.officialCombination || draw.status === 'pendiente')
       .sort((a, b) => a.date.localeCompare(b.date) || a.index - b.index);
   }, [syndicate.draws]);
 
@@ -762,7 +761,7 @@ export default function App() {
       jokerPlayed: hasValidJoker,
       createdBy: isAdmin ? 'admin' : 'socio',
       ticketImage: newDrawTicketImage || undefined,
-      status: newDrawDate >= todayISO() ? 'pendiente' : 'jugado',
+      status: 'pendiente',
     };
 
     const ok = await commit((prev) => ({ ...prev, draws: [...prev.draws, record] }), 'draws');
@@ -1057,7 +1056,9 @@ export default function App() {
           date: extracted.date ?? draw.date,
           displayDate: extracted.date ? formatDateShort(extracted.date) : draw.displayDate,
           dayOfWeek: extracted.dayOfWeek ?? draw.dayOfWeek,
-          betCost: extracted.betCost ?? draw.betCost,
+          betCost: extracted.lines ? betLinesCost(extracted.lines) : (extracted.betCost ?? draw.betCost),
+          lines: extracted.lines ?? draw.lines,
+          jokerPlayed: extracted.jokerPlayed === true,
           notes: extracted.notes ?? draw.notes,
           winningCombination: extracted.winningCombination ?? draw.winningCombination,
         }),
@@ -1751,122 +1752,271 @@ export default function App() {
         }}
       />
 
-      {/* ---------- CABECERA Y PESTAÑAS FIJAS ---------- */}
-      <div className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/95 backdrop-blur pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
-        <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-2.5 py-2 sm:gap-6 sm:px-6 sm:py-4">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <img
-            src="/icons/icon-192.png"
-            alt={syndicate.name}
-            className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-xl object-cover border border-amber-500/40 shadow-lg shadow-amber-500/20"
-          />
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <span className="text-sm sm:text-lg font-bold tracking-tight text-white break-words leading-tight" title={syndicate.name}>{syndicate.name}</span>
-              <span className="text-[11px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium max-w-full whitespace-normal sm:whitespace-nowrap">
-                {paidThisMonth.size}/{syndicate.members.length} pagados en {monthNameFromKey(activeMonth)}
-              </span>
+      {/* ---------- CABECERA ---------- */}
+      <header className="lg:sticky lg:top-0 z-40 border-b border-slate-800/80 bg-slate-950/95 backdrop-blur pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
+        <div className="max-w-7xl mx-auto px-3 py-2.5 sm:px-6 sm:py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4">
+          {/* Fila superior móvil: logo + título + estado + acceso admin/música */}
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <img
+                src="/icons/icon-192.png"
+                alt={syndicate.name}
+                className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl object-cover border border-amber-500/40 shadow-md shadow-amber-500/15"
+              />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm sm:text-base lg:text-lg font-bold tracking-tight text-white truncate" title={syndicate.name}>
+                    {syndicate.name}
+                  </span>
+                  <span className="hidden sm:inline-flex text-xs px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium whitespace-nowrap shrink-0">
+                    {paidThisMonth.size}/{syndicate.members.length} pagados en {monthNameFromKey(activeMonth)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 sm:hidden truncate mt-0.5">
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${serverError ? 'bg-rose-400' : isSyncing ? 'bg-amber-400 animate-ping' : 'bg-emerald-400'}`}
+                    title={serverError ? 'Sin conexión' : isSyncing ? 'Sincronizando...' : 'En vivo'}
+                  />
+                  <span className="truncate">{paidThisMonth.size}/{syndicate.members.length} pagados · {monthNameFromKey(activeMonth)}</span>
+                </div>
+                <div className="text-xs text-slate-400 hidden sm:block">Control Oficial de Lotería Primitiva</div>
+              </div>
             </div>
-            <div className="text-xs text-slate-400 hidden sm:block">Control Oficial de Lotería Primitiva</div>
+
+            {/* Controles rápidos compactos en móvil (fila 1) */}
+            <div className="flex sm:hidden items-center gap-1.5 shrink-0">
+              {isMusicPlaying && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleToggleMusic();
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  aria-label="Pausar música"
+                  title="Música reproduciéndose (clic para pausar)"
+                  className="h-8 w-8 rounded-lg border bg-amber-500/15 text-amber-300 border-amber-500/40 flex items-center justify-center shrink-0"
+                >
+                  <Volume2 className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={() => setShowPermissionsModal(true)}
+                  className="h-8 w-8 text-amber-300 bg-amber-950/70 hover:bg-amber-900 border border-amber-500/40 rounded-lg flex items-center justify-center shrink-0"
+                  title="Gestión de permisos y PIN"
+                  aria-label="Permisos"
+                >
+                  <Shield className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <button
+                onClick={() => void handleToggleAdminMode()}
+                className={`h-8 px-2.5 text-[11px] font-semibold rounded-lg transition-all border shrink-0 whitespace-nowrap flex items-center gap-1 ${isAdmin ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'}`}
+                title={isAdmin ? 'Cambiar a vista de socio' : 'Identificarse como administrador'}
+              >
+                {isAdmin ? <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> : <Eye className="w-3.5 h-3.5 shrink-0" />}
+                <span>{isAdmin ? 'Admin' : 'Socio'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Navegación de escritorio */}
+          <nav className="hidden lg:flex flex-wrap items-center gap-x-4 xl:gap-x-5 gap-y-1 text-sm font-medium text-slate-400">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`transition-colors whitespace-nowrap shrink-0 py-1 flex items-center gap-1.5 ${activeTab === tab.id ? 'text-amber-400 font-semibold border-b-2 border-amber-400' : 'hover:text-white'}`}
+              >
+                {tab.id === 'ai' && <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+                {tab.label}
+                {tab.id === 'sorteos' ? ` (${syndicate.draws.length})` : ''}
+                {tab.id === 'cuotas' && syndicate.members.length > paidThisMonth.size ? ` (${syndicate.members.length - paidThisMonth.size})` : ''}
+              </button>
+            ))}
+          </nav>
+
+          {/* Fila inferior móvil: solo Compartir y Nuevo Boleto bien equilibrados */}
+          <div className={`grid sm:hidden ${canAddBets ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
+            <button
+              onClick={() => void generateWhatsAppMessage()}
+              className="h-9 px-3 text-xs font-semibold text-emerald-300 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/60 rounded-lg whitespace-nowrap flex items-center justify-center gap-1.5"
+              title="Copiar resumen para WhatsApp"
+            >
+              <Share2 className="w-3.5 h-3.5 shrink-0" />
+              <span>{copiedNotification ? '¡Copiado!' : 'Compartir'}</span>
+            </button>
+            {canAddBets && (
+              <button
+                onClick={() => openNewDrawModal()}
+                className="h-9 px-3 border border-amber-400/80 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 rounded-lg hover:from-amber-300 hover:to-amber-400 transition-colors whitespace-nowrap shadow-md flex items-center justify-center gap-1.5"
+                title={isAdmin ? 'Nuevo Boleto' : 'Añadir Mi Boleto'}
+              >
+                <Plus className="w-3.5 h-3.5 shrink-0" />
+                <span>{isAdmin ? 'Nuevo Boleto' : 'Añadir Boleto'}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Botones de acción en tablet/escritorio */}
+          <div className="hidden sm:flex items-center justify-end gap-2 shrink-0">
+            <div
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded-lg bg-slate-900 border border-slate-800 text-slate-400 shrink-0"
+              title={serverError ? 'El servidor no responde: se muestran los datos guardados localmente' : `Sincronizado. Última actualización: ${lastSyncTime || 'Conectado'}`}
+            >
+              <span className={`w-2 h-2 rounded-full ${serverError ? 'bg-rose-400' : isSyncing ? 'bg-amber-400 animate-ping' : 'bg-emerald-400 animate-pulse'}`} />
+              <span>{serverError ? 'Sin conexión' : isSyncing ? 'Sincronizando...' : 'En vivo'}</span>
+            </div>
+
+            <button
+              onClick={() => void handleToggleAdminMode()}
+              className={`h-9 px-3 text-xs font-semibold rounded-lg transition-all border shrink-0 whitespace-nowrap flex items-center justify-center gap-1.5 ${isAdmin ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'}`}
+              title={isAdmin ? 'Cambiar a vista de socio' : 'Identificarse como administrador'}
+            >
+              {isAdmin ? <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> : <Eye className="w-3.5 h-3.5 shrink-0" />}
+              <span className="hidden xl:inline">{isAdmin ? 'Modo Administrador' : 'Modo Consulta (Socio)'}</span>
+              <span className="xl:hidden">{isAdmin ? 'Admin' : 'Socio'}</span>
+            </button>
+
+            {isAdmin && (
+              <button onClick={() => setShowPermissionsModal(true)} className="h-9 px-2.5 text-xs font-semibold text-amber-300 bg-amber-950/70 hover:bg-amber-900 border border-amber-500/40 rounded-lg shrink-0 whitespace-nowrap flex items-center justify-center gap-1" title="Gestión de permisos y PIN">
+                <Shield className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden md:inline">Permisos</span>
+              </button>
+            )}
+
+            <button onClick={() => void handleExportData()} className="flex h-9 p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg shrink-0 items-center justify-center" title="Descargar copia de seguridad (JSON)">
+              <Download className="w-4 h-4 shrink-0" />
+            </button>
+            {isAdmin && (
+              <button onClick={() => importInputRef.current?.click()} className="flex h-9 p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg shrink-0 items-center justify-center" title="Importar copia de seguridad (JSON)">
+                <Upload className="w-4 h-4 shrink-0" />
+              </button>
+            )}
+
+            <button onClick={() => void generateWhatsAppMessage()} className="h-9 px-3 text-xs font-medium text-emerald-300 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/60 rounded-lg shrink-0 whitespace-nowrap flex items-center justify-center gap-1.5" title="Copiar resumen para WhatsApp">
+              <Share2 className="w-3.5 h-3.5 shrink-0" />
+              <span>{copiedNotification ? '¡Copiado!' : 'Compartir'}</span>
+            </button>
+
+            {canAddBets && (
+              <button onClick={() => openNewDrawModal()} className="h-9 px-3.5 border border-amber-400/80 text-xs font-semibold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 rounded-lg hover:from-amber-300 hover:to-amber-400 transition-colors whitespace-nowrap shrink-0 shadow-md flex items-center justify-center gap-1.5" title={isAdmin ? 'Nuevo Boleto' : 'Añadir Mi Boleto'}>
+                <Plus className="w-3.5 h-3.5 shrink-0" />
+                <span>{isAdmin ? 'Nuevo Boleto' : 'Añadir Mi Boleto'}</span>
+              </button>
+            )}
+
+            {isMusicPlaying && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleToggleMusic();
+                }}
+                onPointerDown={(event) => event.stopPropagation()}
+                aria-label="Pausar música"
+                title="Música reproduciéndose (clic para pausar)"
+                className="h-9 px-2.5 text-xs font-semibold rounded-lg border bg-amber-500/15 text-amber-300 border-amber-500/40 hover:bg-amber-500/25 transition-colors whitespace-nowrap shrink-0 flex items-center justify-center gap-1.5"
+              >
+                <Volume2 className="w-3.5 h-3.5 text-amber-400 animate-pulse shrink-0" />
+                <span>Pausar</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* ---------- PESTAÑAS MÓVILES Y TABLET (SIN DESPLAZAMIENTO HORIZONTAL) ---------- */}
+      <nav
+        aria-label="Secciones principales"
+        className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/95 backdrop-blur px-2.5 py-2 lg:hidden pl-[max(0.625rem,env(safe-area-inset-left))] pr-[max(0.625rem,env(safe-area-inset-right))]"
+      >
+        {/* Móvil: 2 filas equilibradas (4 arriba + 3 abajo) para ver todas las pestañas a la vez */}
+        <div className="space-y-1 sm:hidden">
+          <div className="grid grid-cols-4 gap-1">
+            {TABS.slice(0, 4).map((tab) => {
+              const active = activeTab === tab.id;
+              const pendingCount = tab.id === 'cuotas' ? Math.max(syndicate.members.length - paidThisMonth.size, 0) : 0;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-1 py-1.5 rounded-lg border text-[11px] leading-tight text-center transition-colors flex items-center justify-center gap-1 min-w-0 ${
+                    active
+                      ? 'bg-amber-500/15 text-amber-300 border-amber-500/40 font-bold shadow-sm'
+                      : 'bg-slate-900/70 text-slate-300 border-slate-800/80 font-medium hover:text-white'
+                  }`}
+                >
+                  <span className="truncate">{tab.short}</span>
+                  {tab.id === 'sorteos' && (
+                    <span className={`text-[10px] font-mono ${active ? 'text-amber-200' : 'text-slate-400'}`}>
+                      {syndicate.draws.length}
+                    </span>
+                  )}
+                  {pendingCount > 0 && (
+                    <span className="text-[10px] px-1 rounded bg-rose-500/20 text-rose-300 font-bold">
+                      {pendingCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <div className="grid grid-cols-3 gap-1">
+            {TABS.slice(4).map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-1.5 py-1.5 rounded-lg border text-[11px] leading-tight text-center transition-colors flex items-center justify-center gap-1 min-w-0 ${
+                    active
+                      ? 'bg-amber-500/15 text-amber-300 border-amber-500/40 font-bold shadow-sm'
+                      : 'bg-slate-900/70 text-slate-300 border-slate-800/80 font-medium hover:text-white'
+                  }`}
+                >
+                  {tab.id === 'ai' && <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />}
+                  <span className="truncate">{tab.short}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <nav className="hidden lg:flex flex-wrap items-center gap-x-4 xl:gap-x-6 gap-y-1 text-sm font-medium text-slate-400">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`transition-colors whitespace-nowrap shrink-0 py-1 flex items-center gap-1.5 ${activeTab === tab.id ? 'text-amber-400 font-semibold border-b-2 border-amber-400' : 'hover:text-white'}`}
-            >
-              {tab.id === 'ai' && <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
-              {tab.label}
-              {tab.id === 'sorteos' ? ` (${syndicate.draws.length})` : ''}
-              {tab.id === 'cuotas' && syndicate.members.length > paidThisMonth.size ? ` (${syndicate.members.length - paidThisMonth.size})` : ''}
-            </button>
-          ))}
-        </nav>
-
-        <div className="w-full sm:w-auto max-w-full flex items-center justify-between sm:justify-end gap-1 sm:gap-2 flex-wrap sm:flex-nowrap shrink-0">
-          <div
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded-lg bg-slate-900 border border-slate-800 text-slate-400 shrink-0"
-            title={serverError ? 'El servidor no responde: se muestran los datos guardados localmente' : `Sincronizado. Última actualización: ${lastSyncTime || 'Conectado'}`}
-          >
-            <span className={`w-2 h-2 rounded-full ${serverError ? 'bg-rose-400' : isSyncing ? 'bg-amber-400 animate-ping' : 'bg-emerald-400 animate-pulse'}`} />
-            <span>{serverError ? 'Sin conexión' : isSyncing ? 'Sincronizando...' : 'En vivo'}</span>
-          </div>
-
-          <button
-            onClick={() => void handleToggleAdminMode()}
-            className={`h-8 sm:h-9 px-1.5 sm:px-3 text-[11px] sm:text-xs font-semibold rounded-lg transition-all border shrink-0 whitespace-nowrap flex items-center justify-center gap-1 sm:gap-1.5 flex-1 sm:flex-none ${isAdmin ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'}`}
-            title={isAdmin ? 'Cambiar a vista de socio' : 'Identificarse como administrador'}
-          >
-            {isAdmin ? <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> : <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />}
-            <span className="hidden md:inline">{isAdmin ? 'Modo Administrador' : 'Modo Consulta (Socio)'}</span>
-            <span className="md:hidden">{isAdmin ? 'Admin' : 'Socio'}</span>
-          </button>
-
-          {isAdmin && (
-            <button onClick={() => setShowPermissionsModal(true)} className="h-8 sm:h-9 px-1.5 sm:px-2.5 text-[11px] sm:text-xs font-semibold text-amber-300 bg-amber-950/70 hover:bg-amber-900 border border-amber-500/40 rounded-lg shrink-0 whitespace-nowrap flex items-center justify-center gap-1" title="Gestión de permisos y PIN">
-              <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-              <span className="hidden sm:inline">Permisos</span>
-            </button>
-          )}
-
-          <button onClick={() => void handleExportData()} className="hidden sm:flex h-8 sm:h-9 p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg shrink-0 items-center justify-center" title="Descargar copia de seguridad (JSON)">
-            <Download className="w-4 h-4 shrink-0" />
-          </button>
-          {isAdmin && (
-            <button onClick={() => importInputRef.current?.click()} className="hidden sm:flex h-8 sm:h-9 p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg shrink-0 items-center justify-center" title="Importar copia de seguridad (JSON)">
-              <Upload className="w-4 h-4 shrink-0" />
-            </button>
-          )}
-
-          <button onClick={() => void generateWhatsAppMessage()} className="h-8 sm:h-9 px-1.5 sm:px-3 text-[11px] sm:text-xs font-medium text-emerald-300 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/60 rounded-lg shrink-0 whitespace-nowrap flex items-center justify-center gap-1 sm:gap-1.5 flex-1 sm:flex-none" title="Copiar resumen para WhatsApp">
-            <Share2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-            <span>{copiedNotification ? '¡Copiado!' : 'Compartir'}</span>
-          </button>
-
-          {canAddBets && (
-            <button onClick={() => openNewDrawModal()} className="h-8 sm:h-9 px-1.5 sm:px-3.5 border border-amber-400/80 text-[11px] sm:text-xs font-semibold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 rounded-lg hover:from-amber-300 hover:to-amber-400 transition-colors whitespace-nowrap shrink-0 shadow-md flex items-center justify-center gap-1 sm:gap-1.5 flex-1 sm:flex-none" title={isAdmin ? 'Nuevo Boleto' : 'Añadir Mi Boleto'}>
-              <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-              <span className="hidden sm:inline">{isAdmin ? 'Nuevo Boleto' : 'Añadir Mi Boleto'}</span>
-              <span className="sm:hidden">{isAdmin ? 'Nuevo' : 'Boleto'}</span>
-            </button>
-          )}
-
-          {isMusicPlaying && (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleToggleMusic();
-              }}
-              onPointerDown={(event) => event.stopPropagation()}
-              aria-label="Pausar música"
-              title="Música reproduciéndose (clic para pausar)"
-              className="h-8 sm:h-9 px-2 sm:px-2.5 text-[11px] sm:text-xs font-semibold rounded-lg border bg-amber-500/15 text-amber-300 border-amber-500/40 hover:bg-amber-500/25 transition-colors whitespace-nowrap shrink-0 flex items-center justify-center gap-1.5"
-            >
-              <Volume2 className="w-3.5 h-3.5 text-amber-400 animate-pulse shrink-0" />
-              <span className="hidden sm:inline">Pausar</span>
-            </button>
-          )}
+        {/* Tablet (sm a md): las 7 pestañas en una sola fila sin scroll */}
+        <div className="hidden sm:grid grid-cols-7 gap-1.5 max-w-7xl mx-auto">
+          {TABS.map((tab) => {
+            const active = activeTab === tab.id;
+            const pendingCount = tab.id === 'cuotas' ? Math.max(syndicate.members.length - paidThisMonth.size, 0) : 0;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-2 py-1.5 rounded-lg border text-xs leading-tight text-center transition-colors flex items-center justify-center gap-1 min-w-0 ${
+                  active
+                    ? 'bg-amber-500/15 text-amber-300 border-amber-500/40 font-bold'
+                    : 'bg-slate-900/70 text-slate-300 border-slate-800/80 font-medium hover:text-white'
+                }`}
+              >
+                {tab.id === 'ai' && <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                <span className="truncate">{tab.short}</span>
+                {tab.id === 'sorteos' && (
+                  <span className="text-[11px] font-mono opacity-80">({syndicate.draws.length})</span>
+                )}
+                {pendingCount > 0 && (
+                  <span className="text-[10px] px-1 rounded bg-rose-500/20 text-rose-300 font-bold">
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
-        </header>
-        {/* ---------- PESTAÑAS MÓVILES EN UNA SOLA LÍNEA ---------- */}
-        <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto no-scrollbar px-2.5 py-2 text-xs lg:hidden">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`shrink-0 whitespace-nowrap rounded px-1.5 py-1 ${activeTab === tab.id ? 'bg-amber-500/10 text-amber-400 font-bold' : 'text-slate-400'}`}
-            >
-              {tab.short}
-              {tab.id === 'sorteos' ? ` (${syndicate.draws.length})` : ''}
-              {tab.id === 'cuotas' && syndicate.members.length > paidThisMonth.size ? ` (${syndicate.members.length - paidThisMonth.size})` : ''}
-            </button>
-          ))}
-        </div>
-      </div>
+      </nav>
 
       {newDrawAlert && activeTab !== 'resumen' && (
         <div className="bg-amber-950/70 border-b border-amber-500/40 px-6 py-2.5 flex flex-wrap items-center justify-center gap-3 text-xs text-amber-100">
@@ -1903,46 +2053,26 @@ export default function App() {
 
         {/* ================= RESUMEN ================= */}
         {activeTab === 'resumen' && (
-          <div className="space-y-6 sm:space-y-8 min-w-0">
-            <div className="relative rounded-2xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-amber-950/50 border border-emerald-500/20 p-4 overflow-hidden shadow-2xl sm:p-8">
-              <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-              <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 min-w-0">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 text-xs font-medium text-emerald-400 mb-2">
-                    <CheckCircle2 className="w-4 h-4 shrink-0" /> Control Oficial Centralizado de la Peña
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-2 break-words">{syndicate.name}</h1>
-                  <p className="text-slate-300 max-w-2xl text-sm leading-relaxed break-words">
-                    Cuota mensual de <strong className="text-amber-300">{money(syndicate.monthlyFee)}</strong> por socio. En <strong>{monthNameFromKey(activeMonth)}</strong> hay {paidThisMonth.size} de {syndicate.members.length} pagados. Hemos jugado {syndicate.draws.length} sorteos y disponemos de <strong className="text-emerald-300">{money(totals.totalCaja)} en CAJA</strong> para seguir jugando o repartir.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-              <StatCard label="Caja disponible" value={money(totals.totalCaja)} hint={`${totals.futureDrawsPossible} sorteos futuros`} icon={<Wallet className="w-3.5 h-3.5" />} highlighted />
-              <StatCard label="Cuota mensual" value={money(syndicate.monthlyFee)} hint="Por socio y mes" icon={<Settings2 className="w-3.5 h-3.5" />} tone="amber" />
-              <StatCard label={`Pagados en ${monthNameFromKey(activeMonth)}`} value={`${paidThisMonth.size} / ${syndicate.members.length}`} hint="Cuotas marcadas en verde" icon={<CheckCircle2 className="w-3.5 h-3.5" />} tone="emerald" />
-              <StatCard label="Pendientes" value={String(Math.max(syndicate.members.length - paidThisMonth.size, 0))} hint="Cuotas marcadas en rojo" icon={<Clock className="w-3.5 h-3.5" />} tone="rose" />
-              <StatCard label="Extras y premios" value={money(totals.totalExtras + totals.totalPremios)} hint={`Extras ${money(totals.totalExtras)} · premios ${money(totals.totalPremios)}`} icon={<Trophy className="w-3.5 h-3.5" />} tone="amber" />
-              <StatCard label="Aportado históricamente" value={money(totals.totalPagado)} hint="Cómputo total de la peña" icon={<ArrowDownRight className="w-3.5 h-3.5" />} tone="slate" />
-            </div>
-
+          <div className="space-y-5 sm:space-y-8 min-w-0">
             {upcomingDraws.length > 0 && (
-              <section className="bg-gradient-to-br from-amber-950/35 via-slate-950/90 to-slate-950 border border-amber-500/40 rounded-2xl p-3.5 sm:p-5 space-y-4 shadow-xl min-w-0 overflow-hidden">
+              <section className="bg-gradient-to-br from-amber-950/40 via-slate-950/90 to-slate-950 border border-amber-500/45 rounded-2xl p-3.5 sm:p-5 space-y-3.5 shadow-xl min-w-0 overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-amber-500/20 pb-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
                         <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
-                        <span>Próximos sorteos por celebrarse ({upcomingDraws.length})</span>
+                        <span>
+                          {upcomingDraws.length === 1
+                            ? 'Próximo sorteo por celebrarse'
+                            : `Próximos sorteos por celebrarse (${upcomingDraws.length})`}
+                        </span>
                       </h2>
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
                         Pendiente de sorteo
                       </span>
                     </div>
                     <p className="text-xs text-slate-300 mt-1">
-                      Boletos ya registrados cuya combinación ganadora aún no se ha celebrado. El resultado oficial se comprobará automáticamente a las 23:00.
+                      Boleto ya registrado cuya combinación oficial aún no se ha celebrado. El resultado se comprobará automáticamente a las 23:00.
                     </p>
                   </div>
                   <button
@@ -1958,6 +2088,30 @@ export default function App() {
                 </div>
               </section>
             )}
+
+            <div className="relative rounded-2xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-amber-950/50 border border-emerald-500/20 p-4 overflow-hidden shadow-2xl sm:p-8">
+              <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 min-w-0">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-xs font-medium text-emerald-400 mb-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" /> Control Oficial Centralizado de la Peña
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-2 break-words">{syndicate.name}</h1>
+                  <p className="text-slate-300 max-w-2xl text-sm leading-relaxed break-words">
+                    Cuota mensual de <strong className="text-amber-300">{money(syndicate.monthlyFee)}</strong> por socio. En <strong>{monthNameFromKey(activeMonth)}</strong> hay {paidThisMonth.size} de {syndicate.members.length} pagados. Hemos jugado {syndicate.draws.length} sorteos y disponemos de <strong className="text-emerald-300">{money(totals.totalCaja)} en CAJA</strong> para seguir jugando o repartir.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-4">
+              <StatCard label="Caja disponible" value={money(totals.totalCaja)} hint={`${totals.futureDrawsPossible} sorteos futuros`} icon={<Wallet className="w-3.5 h-3.5" />} highlighted />
+              <StatCard label="Cuota mensual" value={money(syndicate.monthlyFee)} hint="Por socio y mes" icon={<Settings2 className="w-3.5 h-3.5" />} tone="amber" />
+              <StatCard label={`Pagados en ${monthNameFromKey(activeMonth)}`} value={`${paidThisMonth.size} / ${syndicate.members.length}`} hint="Cuotas marcadas en verde" icon={<CheckCircle2 className="w-3.5 h-3.5" />} tone="emerald" />
+              <StatCard label="Pendientes" value={String(Math.max(syndicate.members.length - paidThisMonth.size, 0))} hint="Cuotas marcadas en rojo" icon={<Clock className="w-3.5 h-3.5" />} tone="rose" />
+              <StatCard label="Extras y premios" value={money(totals.totalExtras + totals.totalPremios)} hint={`Extras ${money(totals.totalExtras)} · premios ${money(totals.totalPremios)}`} icon={<Trophy className="w-3.5 h-3.5" />} tone="amber" />
+              <StatCard label="Aportado históricamente" value={money(totals.totalPagado)} hint="Cómputo total de la peña" icon={<ArrowDownRight className="w-3.5 h-3.5" />} tone="slate" />
+            </div>
 
             {/* QUICK NAVIGATION / ACCESS CARDS TO OTHER TABS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">

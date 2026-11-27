@@ -427,7 +427,7 @@ export function normalizeSyndicate(raw: unknown): SyndicateData {
       jokerPlayed,
       createdBy: draw.createdBy === 'socio' || draw.createdBy === 'admin' ? draw.createdBy : undefined,
       ticketImage: stringOr(draw.ticketImage) || verified?.ticketImage || undefined,
-      status: (!cleanOfficial && (draw.status === 'pendiente' || date >= todayISO()) ? 'pendiente' : 'jugado') as DrawRecord['status'],
+      status: (!cleanOfficial ? 'pendiente' : 'jugado') as DrawRecord['status'],
     };
   }).sort((a, b) => b.date.localeCompare(a.date) || b.index - a.index);
 

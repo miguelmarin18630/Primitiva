@@ -66,16 +66,16 @@ interface StatCardProps {
 export function StatCard({ label, value, hint, icon, tone = 'slate', highlighted = false }: StatCardProps) {
   return (
     <div
-      className={`min-w-0 overflow-hidden ${highlighted ? 'bg-gradient-to-br from-emerald-950/80 via-slate-950 to-slate-950 border-2 border-emerald-500/40 shadow-lg' : 'bg-slate-950/70 border border-slate-800 shadow-sm'} rounded-2xl p-4 sm:p-5 transition-colors hover:border-slate-600`}
+      className={`min-w-0 overflow-hidden ${highlighted ? 'bg-gradient-to-br from-emerald-950/80 via-slate-950 to-slate-950 border-2 border-emerald-500/40 shadow-lg' : 'bg-slate-950/70 border border-slate-800 shadow-sm'} rounded-2xl p-3 sm:p-5 transition-colors hover:border-slate-600`}
     >
-      <div className={`flex items-center justify-between gap-2 text-xs mb-2 font-medium ${highlighted ? 'text-emerald-400 font-bold uppercase tracking-wider' : 'text-slate-400'}`}>
-        <span className="min-w-0 break-words">{label}</span>
-        <div className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center ${toneIcon[tone]}`}>{icon}</div>
+      <div className={`flex items-center justify-between gap-1.5 text-[11px] sm:text-xs mb-1.5 sm:mb-2 font-medium ${highlighted ? 'text-emerald-400 font-bold uppercase tracking-wider' : 'text-slate-400'}`}>
+        <span className="min-w-0 break-words leading-tight">{label}</span>
+        <div className={`w-6 h-6 sm:w-7 sm:h-7 shrink-0 rounded-lg flex items-center justify-center ${toneIcon[tone]}`}>{icon}</div>
       </div>
-      <div className={`text-xl sm:text-2xl font-extrabold tabular-nums break-words ${highlighted ? 'text-emerald-400' : tone === 'amber' ? 'text-amber-400' : tone === 'emerald' ? 'text-emerald-400' : 'text-white'}`}>
+      <div className={`text-lg sm:text-2xl font-extrabold tabular-nums break-words ${highlighted ? 'text-emerald-400' : tone === 'amber' ? 'text-amber-400' : tone === 'emerald' ? 'text-emerald-400' : 'text-white'}`}>
         {value}
       </div>
-      <div className={`text-[11px] mt-1.5 font-medium break-words ${highlighted ? 'text-emerald-300' : tone === 'slate' ? 'text-slate-400' : toneIcon[tone].split(' ')[1]}`}>
+      <div className={`text-[10px] sm:text-[11px] mt-1 sm:mt-1.5 font-medium break-words leading-snug ${highlighted ? 'text-emerald-300' : tone === 'slate' ? 'text-slate-400' : toneIcon[tone].split(' ')[1]}`}>
         {hint}
       </div>
     </div>
