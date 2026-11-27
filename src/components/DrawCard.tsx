@@ -22,10 +22,10 @@ export function DrawCard({
 }: DrawCardProps) {
   return (
     <div
-      className={`${draw.prizeWon > 0 ? 'border-amber-500/40 bg-amber-950/10' : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'} ${compact ? 'p-4 rounded-xl' : 'p-5 rounded-2xl'} border transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3`}
+      className={`min-w-0 w-full overflow-hidden ${draw.prizeWon > 0 ? 'border-amber-500/40 bg-amber-950/10' : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'} ${compact ? 'p-3.5 sm:p-4 rounded-xl' : 'p-3.5 sm:p-5 rounded-2xl'} border transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3`}
     >
       <div className="space-y-2 flex-1 min-w-0 w-full">
-        <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
           <span className="font-mono font-bold text-slate-400">#{draw.index}</span>
           <span className="font-semibold text-white">{draw.dayOfWeek} · {draw.displayDate}</span>
           <span className="text-slate-400">· {drawBetLines(draw).length} apuestas × 1 € = {money(draw.betCost)}</span>
@@ -42,7 +42,7 @@ export function DrawCard({
           )}
         </div>
 
-        <div className="flex flex-wrap items-start gap-3 pt-0.5">
+        <div className="flex flex-wrap items-start gap-3 pt-0.5 min-w-0">
           <CombinationComparison
             bets={drawBetLines(draw)}
             official={draw.officialCombination}
@@ -71,18 +71,18 @@ export function DrawCard({
           )}
         </div>
 
-        {draw.notes && <div className="text-xs text-slate-400">{draw.notes}</div>}
+        {draw.notes && <div className="text-xs text-slate-400 break-words">{draw.notes}</div>}
       </div>
 
-      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+      <div className="flex flex-wrap items-center gap-2 shrink-0 self-end sm:self-center max-w-full">
         {draw.ticketImage ? (
           <button onClick={onViewTicket} className="px-2.5 py-1.5 text-xs font-medium text-emerald-300 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/60 rounded-lg transition-colors flex items-center gap-1.5">
-            <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
+            <ImageIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <span>{compact ? 'Ver Boleto' : 'Ver Foto del Boleto'}</span>
           </button>
         ) : canUploadTicket ? (
           <button onClick={onUploadTicket} className="px-2.5 py-1.5 text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5">
-            <Camera className="w-3.5 h-3.5 text-amber-400" />
+            <Camera className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <span>Subir Boleto</span>
           </button>
         ) : (

@@ -58,7 +58,7 @@ const TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
  * 2 = datos del Excel, con José Ramón al corriente con 22 € reales.
  * 3 = cuota mensual de 5 €, tablero por meses y aportaciones extras.
  */
-export const CURRENT_DATA_VERSION = 3;
+export const CURRENT_DATA_VERSION = 4;
 
 function randomHex(): string {
   const bytes = new Uint8Array(32);
@@ -119,6 +119,26 @@ export function migrateStore(store: StoreData): { store: StoreData; changed: boo
       monthlyPayments: fresh.monthlyPayments,
       extraContributions: fresh.extraContributions,
       extraPrizes: syndicate.extraPrizes.filter((prize) => !(prize.memberOrConcept === 'LETI' && prize.amount === 3)),
+    };
+  }
+
+  if (version < 4) {
+    // Limpia números de Joker mostrados en sorteos donde la peña no jugó Joker (JOKER: NO).
+    syndicate = {
+      ...syndicate,
+      draws: syndicate.draws.map((draw) => {
+        if (draw.jokerPlayed === true) return draw;
+        return {
+          ...draw,
+          jokerPlayed: false,
+          winningCombination: draw.winningCombination
+            ? { ...draw.winningCombination, joker: undefined }
+            : undefined,
+          officialCombination: draw.officialCombination
+            ? { ...draw.officialCombination, joker: undefined }
+            : undefined,
+        };
+      }),
     };
   }
 
@@ -258,7 +278,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido (sin markdown fuera del JSON):
   "dayOfWeek": "Lunes, Jueves o Sábado",
   "betCost": 5.0,
   "reintegro": 6,
-  "joker": "número joker si aparece",
+  "joker": "",
   "jokerPlayed": false,
   "lines": [
     {
@@ -274,15 +294,15 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido (sin markdown fuera del JSON):
   "winningCombination": {
     "numbers": [los 6 números de la primera apuesta/línea 1],
     "complementario": 0,
-    "reintegro": 6,
-    "joker": "número joker si aparece"
+    "reintegro": 6
   }
 }
 
 Reglas importantes:
 - Un boleto de La Primitiva suele contener entre 1 y 8 apuestas (bloques o filas de 6 números del 1 al 49). Extrae TODAS las líneas o bloques jugados en el array "lines".
 - "numbers" en cada línea DEBE contener exactamente 6 enteros distintos del 1 al 49, ordenados de menor a mayor.
-- Si ves el número de Reintegro (R: X), inclúyelo en "reintegro" (entero del 0 al 9).
+- Si ves el número de Reintegro (REINTEGRO: X), inclúyelo en "reintegro" (entero del 0 al 9).
+- MUY IMPORTANTE SOBRE EL JOKER: busca la línea que pone "JOKER:" (justo debajo de REINTEGRO). El número de Joker SOLO existe si justo a la derecha de "JOKER:" aparece un número de 7 cifras (por ejemplo, "JOKER: 1 234 567"). Si pone "JOKER: NO", o no aparece un número de 7 cifras junto a "JOKER:", devuelve OBLIGATORIAMENTE "jokerPlayed": false y "joker": "". NUNCA confundas el número de referencia del boleto, el código de administración (ej. 37170-0), el número de sorteo ni la serie de control/código de barras inferior con el Joker.
 - Si no logras leer con certeza una línea, no la inventes. Devuelve solo las líneas leídas con claridad.`;
 
 export async function handleApiRequest(req: ApiRequest, env: ApiEnvironment): Promise<ApiResponse> {

@@ -423,6 +423,13 @@ export default function App() {
     [syndicate.draws, drawMonthFilter, onlyPrizesFilter],
   );
 
+  const upcomingDraws = useMemo(() => {
+    const today = todayISO();
+    return syndicate.draws
+      .filter((draw) => !draw.officialCombination && (draw.status === 'pendiente' || draw.date >= today))
+      .sort((a, b) => a.date.localeCompare(b.date) || a.index - b.index);
+  }, [syndicate.draws]);
+
   const prizeDraws = useMemo(
     () => syndicate.draws.filter((draw) => draw.prizeWon > 0).sort((a, b) => b.date.localeCompare(a.date) || b.index - a.index),
     [syndicate.draws],
@@ -607,7 +614,11 @@ export default function App() {
       const extracted = sanitizeTicketExtraction(result.data);
       if (extracted.date) setNewDrawDate(extracted.date);
       if (extracted.reintegro !== undefined) setNewDrawReintegro(extracted.reintegro);
-      if (extracted.joker) setNewDrawJoker(extracted.joker);
+      if (extracted.jokerPlayed === true && extracted.joker) {
+        setNewDrawJoker(extracted.joker);
+      } else {
+        setNewDrawJoker('');
+      }
 
       if (extracted.lines && extracted.lines.length > 0) {
         const count = extracted.lines.length;
@@ -730,6 +741,9 @@ export default function App() {
     const reintegroVal = newDrawReintegro !== '' ? Number(newDrawReintegro) : 0;
     const betCost = parsedLines.length;
 
+    const cleanJoker = newDrawJoker.trim();
+    const hasValidJoker = /^\d{7}$/.test(cleanJoker);
+
     const record: DrawRecord = {
       id: `d_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       index: nextDrawIndex(syndicate.draws),
@@ -743,12 +757,12 @@ export default function App() {
         numbers: parsedLines[0].numbers,
         complementario: 0,
         reintegro: reintegroVal,
-        joker: newDrawJoker.trim() || undefined,
+        joker: hasValidJoker ? cleanJoker : undefined,
       },
-      jokerPlayed: !!newDrawJoker.trim(),
+      jokerPlayed: hasValidJoker,
       createdBy: isAdmin ? 'admin' : 'socio',
       ticketImage: newDrawTicketImage || undefined,
-      status: newDrawDate > todayISO() ? 'pendiente' : 'jugado',
+      status: newDrawDate >= todayISO() ? 'pendiente' : 'jugado',
     };
 
     const ok = await commit((prev) => ({ ...prev, draws: [...prev.draws, record] }), 'draws');
@@ -1229,7 +1243,11 @@ export default function App() {
     const ok = await commit((prev) => ({
       ...prev,
       draws: prev.draws.map((draw) => (draw.id === editingWinningDraw.id
-        ? { ...draw, officialCombination: combination }
+        ? {
+          ...draw,
+          status: 'jugado' as const,
+          officialCombination: draw.jokerPlayed ? combination : { ...combination, joker: undefined },
+        }
         : draw)),
     }));
     if (!ok) {
@@ -1704,13 +1722,13 @@ export default function App() {
     const payment = syndicate.monthlyPayments.find((p) => p.month === monthKey && p.memberId === member.id);
     return (
       <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border ${
+        className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-[11px] font-semibold border whitespace-nowrap shrink-0 max-w-full ${
           paid
             ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
             : 'bg-rose-500/15 border-rose-500/40 text-rose-300'
         }`}
       >
-        {paid ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+        {paid ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> : <Clock className="w-3.5 h-3.5 shrink-0" />}
         {paid ? (compact ? 'Pagado' : `Pagado · ${money(payment?.amount ?? syndicate.monthlyFee)}`) : 'Pendiente'}
       </span>
     );
@@ -1753,7 +1771,7 @@ export default function App() {
           </div>
         </div>
 
-        <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-400">
+        <nav className="hidden lg:flex flex-wrap items-center gap-x-4 xl:gap-x-6 gap-y-1 text-sm font-medium text-slate-400">
           {TABS.map((tab) => (
             <button
               key={tab.id}
@@ -1768,7 +1786,7 @@ export default function App() {
           ))}
         </nav>
 
-        <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-1 sm:gap-2 flex-nowrap shrink-0 overflow-x-auto no-scrollbar">
+        <div className="w-full sm:w-auto max-w-full flex items-center justify-between sm:justify-end gap-1 sm:gap-2 flex-wrap sm:flex-nowrap shrink-0">
           <div
             className="hidden md:flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded-lg bg-slate-900 border border-slate-800 text-slate-400 shrink-0"
             title={serverError ? 'El servidor no responde: se muestran los datos guardados localmente' : `Sincronizado. Última actualización: ${lastSyncTime || 'Conectado'}`}
@@ -1865,12 +1883,12 @@ export default function App() {
         </div>
       )}
 
-      <main className="flex-1 max-w-7xl w-full min-w-0 mx-auto p-4 space-y-8 sm:p-6">
+      <main className="flex-1 max-w-7xl w-full min-w-0 mx-auto py-4 sm:py-6 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] space-y-6 sm:space-y-8 overflow-x-clip">
         {!auth && (
-          <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-200">
+          <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-xl px-3.5 sm:px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-200">
             <div className="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
               <Eye className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5 sm:mt-0" />
-              <p className="leading-relaxed">
+              <p className="leading-relaxed break-words">
                 Estás en <strong className="text-white font-semibold">vista de consulta</strong>. Los datos se actualizan en tiempo real según los gestiona el administrador.
               </p>
             </div>
@@ -1885,16 +1903,16 @@ export default function App() {
 
         {/* ================= RESUMEN ================= */}
         {activeTab === 'resumen' && (
-          <div className="space-y-8">
-            <div className="relative rounded-2xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-amber-950/50 border border-emerald-500/20 p-5 overflow-hidden shadow-2xl sm:p-8">
+          <div className="space-y-6 sm:space-y-8 min-w-0">
+            <div className="relative rounded-2xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-amber-950/50 border border-emerald-500/20 p-4 overflow-hidden shadow-2xl sm:p-8">
               <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-              <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div>
+              <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 min-w-0">
+                <div className="min-w-0">
                   <div className="flex items-center gap-2 text-xs font-medium text-emerald-400 mb-2">
-                    <CheckCircle2 className="w-4 h-4" /> Control Oficial Centralizado de la Peña
+                    <CheckCircle2 className="w-4 h-4 shrink-0" /> Control Oficial Centralizado de la Peña
                   </div>
-                  <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-2">{syndicate.name}</h1>
-                  <p className="text-slate-300 max-w-2xl text-sm leading-relaxed">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-2 break-words">{syndicate.name}</h1>
+                  <p className="text-slate-300 max-w-2xl text-sm leading-relaxed break-words">
                     Cuota mensual de <strong className="text-amber-300">{money(syndicate.monthlyFee)}</strong> por socio. En <strong>{monthNameFromKey(activeMonth)}</strong> hay {paidThisMonth.size} de {syndicate.members.length} pagados. Hemos jugado {syndicate.draws.length} sorteos y disponemos de <strong className="text-emerald-300">{money(totals.totalCaja)} en CAJA</strong> para seguir jugando o repartir.
                   </p>
                 </div>
@@ -1909,6 +1927,37 @@ export default function App() {
               <StatCard label="Extras y premios" value={money(totals.totalExtras + totals.totalPremios)} hint={`Extras ${money(totals.totalExtras)} · premios ${money(totals.totalPremios)}`} icon={<Trophy className="w-3.5 h-3.5" />} tone="amber" />
               <StatCard label="Aportado históricamente" value={money(totals.totalPagado)} hint="Cómputo total de la peña" icon={<ArrowDownRight className="w-3.5 h-3.5" />} tone="slate" />
             </div>
+
+            {upcomingDraws.length > 0 && (
+              <section className="bg-gradient-to-br from-amber-950/35 via-slate-950/90 to-slate-950 border border-amber-500/40 rounded-2xl p-3.5 sm:p-5 space-y-4 shadow-xl min-w-0 overflow-hidden">
+                <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-amber-500/20 pb-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+                        <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
+                        <span>Próximos sorteos por celebrarse ({upcomingDraws.length})</span>
+                      </h2>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                        Pendiente de sorteo
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-1">
+                      Boletos ya registrados cuya combinación ganadora aún no se ha celebrado. El resultado oficial se comprobará automáticamente a las 23:00.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setActiveTab('sorteos'); setDrawMonthFilter('all'); setOnlyPrizesFilter(false); }}
+                    className="px-3 py-1.5 text-xs font-semibold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg transition-colors shrink-0"
+                  >
+                    Ver todos los sorteos
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {upcomingDraws.map((draw) => renderDrawCard(draw, false))}
+                </div>
+              </section>
+            )}
 
             {/* QUICK NAVIGATION / ACCESS CARDS TO OTHER TABS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
@@ -1972,18 +2021,18 @@ export default function App() {
 
         {/* ================= CUOTAS Y EXTRAS ================= */}
         {activeTab === 'cuotas' && (
-          <div className="space-y-6">
+          <div className="space-y-6 min-w-0">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-extrabold text-white">Cuotas Mensuales y Aportaciones Extras</h1>
-                <p className="text-sm text-slate-400">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-white break-words">Cuotas Mensuales y Aportaciones Extras</h1>
+                <p className="text-sm text-slate-400 break-words">
                   Tablero de {monthNameFromKey(activeMonth)}: verde = cuota pagada, rojo = pendiente. Cuota actual: <strong className="text-amber-300">{money(syndicate.monthlyFee)}</strong> por socio.
                 </p>
               </div>
               {isAdmin && (
                 <button
                   onClick={() => { setFeeInput(syndicate.monthlyFee); setShowFeeModal(true); }}
-                  className="px-4 py-2 text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl shadow-md flex items-center gap-1.5"
+                  className="px-4 py-2 text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl shadow-md flex items-center gap-1.5 shrink-0"
                 >
                   <Settings2 className="w-4 h-4" /> Modificar cuota
                 </button>
@@ -1997,18 +2046,18 @@ export default function App() {
               <StatCard label="Aportaciones extras" value={money(totals.totalExtras)} hint={`${syndicate.extraContributions.length} registros`} icon={<Wallet className="w-3.5 h-3.5" />} tone="amber" />
             </div>
 
-            <div className="bg-amber-500/10 border border-amber-400/35 rounded-2xl p-5 shadow-md flex flex-wrap items-center justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-3.5 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-amber-400/15 border border-amber-400/30 flex items-center justify-center shrink-0">
+            <div className="bg-amber-500/10 border border-amber-400/35 rounded-2xl p-3.5 sm:p-5 shadow-md flex flex-wrap items-center justify-between gap-3 sm:gap-4 min-w-0 overflow-hidden">
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3.5 min-w-0 w-full sm:w-auto">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-400/15 border border-amber-400/30 flex items-center justify-center shrink-0">
                   <Calendar className="w-5 h-5 text-amber-300" />
                 </div>
-                <span className="text-base sm:text-lg font-bold text-amber-100 tracking-tight">Mes del tablero:</span>
-                <div className="relative inline-flex items-center max-w-full">
+                <span className="text-sm sm:text-lg font-bold text-amber-100 tracking-tight">Mes del tablero:</span>
+                <div className="relative inline-flex items-center max-w-full min-w-0">
                   <select
                     aria-label="Mes del tablero"
                     value={activeMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="appearance-none cursor-pointer max-w-full bg-amber-300/20 hover:bg-amber-300/30 text-amber-100 border border-amber-300/60 rounded-xl pl-4 pr-11 py-2.5 text-sm sm:text-base font-bold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-amber-300/50"
+                    className="appearance-none cursor-pointer max-w-full bg-amber-300/20 hover:bg-amber-300/30 text-amber-100 border border-amber-300/60 rounded-xl pl-3.5 pr-10 py-2 sm:py-2.5 text-sm sm:text-base font-bold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-amber-300/50"
                   >
                     {syndicate.months.map((key) => (
                       <option key={key} value={key} className="bg-slate-900 text-white font-semibold">
@@ -2016,31 +2065,31 @@ export default function App() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-3.5 w-5 h-5 text-amber-200 stroke-[2.25]" />
+                  <ChevronDown className="pointer-events-none absolute right-3 w-5 h-5 text-amber-200 stroke-[2.25]" />
                 </div>
               </div>
               {isAdmin && (
-                <form onSubmit={handleAddMonth} className="flex flex-wrap items-center gap-2">
+                <form onSubmit={handleAddMonth} className="flex flex-wrap items-center gap-2 w-full sm:w-auto min-w-0">
                   <input
                     type="month"
                     value={newMonthInput}
                     onChange={(e) => setNewMonthInput(e.target.value)}
-                    className="bg-slate-900 border border-emerald-400/40 text-xs sm:text-sm font-semibold text-white rounded-xl px-3.5 py-2 focus:outline-none focus:border-emerald-300"
+                    className="min-w-0 flex-1 sm:flex-none max-w-full bg-slate-900 border border-emerald-400/40 text-xs sm:text-sm font-semibold text-white rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-300"
                   />
-                  <button type="submit" className="px-4 py-2 text-xs sm:text-sm font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl shadow-md flex items-center gap-1.5">
+                  <button type="submit" className="px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl shadow-md flex items-center gap-1.5 shrink-0">
                     <Plus className="w-4 h-4" /> Añadir mes
                   </button>
                 </form>
               )}
             </div>
 
-            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-bold text-white flex items-center gap-2"><Users className="w-4 h-4 text-emerald-400" /> Control de cuotas · {monthNameFromKey(activeMonth)}</h2>
+            <div className="bg-slate-950/60 border border-slate-800 rounded-2xl overflow-hidden min-w-0">
+              <div className="px-3.5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold text-white flex items-center gap-2"><Users className="w-4 h-4 text-emerald-400 shrink-0" /> <span className="break-words">Control de cuotas · {monthNameFromKey(activeMonth)}</span></h2>
                   <p className="text-[11px] text-slate-400">Pulsa «Marcar pagado» o «Marcar pendiente» para actualizar el color de cada socio.</p>
                 </div>
-                <div className="flex items-center gap-3 text-[11px]">
+                <div className="flex items-center gap-3 text-[11px] shrink-0">
                   <span className="flex items-center gap-1.5 text-emerald-300"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Pagado</span>
                   <span className="flex items-center gap-1.5 text-rose-300"><span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Pendiente</span>
                 </div>
@@ -2051,7 +2100,7 @@ export default function App() {
                   return (
                     <div
                       key={member.id}
-                      className={`flex items-center justify-between gap-2 px-4 py-3 transition-colors sm:gap-3 sm:px-6 ${paid ? 'bg-emerald-950/20' : 'bg-rose-950/10'}`}
+                      className={`flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 px-3 py-3 transition-colors sm:gap-3 sm:px-6 ${paid ? 'bg-emerald-950/20' : 'bg-rose-950/10'}`}
                     >
                       <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
                         <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center font-bold text-white text-xs border shrink-0 ${paid ? 'bg-emerald-600/30 border-emerald-500/40' : 'bg-rose-600/20 border-rose-500/40'}`}>
@@ -2062,12 +2111,12 @@ export default function App() {
                           <div className="text-[11px] text-slate-400">Cuota: {money(paymentsThisMonth.find((p) => p.memberId === member.id)?.amount ?? syndicate.monthlyFee)}</div>
                         </div>
                       </div>
-                      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                      <div className="flex flex-wrap sm:flex-nowrap items-center justify-end gap-1.5 sm:gap-3 ml-auto max-w-full">
                         <span className="shrink-0">{renderPaymentPill(member, activeMonth, true)}</span>
                         {isAdmin && (
                           <button
                             onClick={() => void handleToggleMonthlyPayment(member.id)}
-                            className={`whitespace-nowrap px-3 py-1.5 text-[11px] font-semibold rounded-lg border transition-colors ${paid ? 'bg-rose-500/10 text-rose-300 border-rose-500/30 hover:bg-rose-500/20' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20'}`}
+                            className={`whitespace-nowrap px-2.5 sm:px-3 py-1.5 text-[11px] font-semibold rounded-lg border transition-colors ${paid ? 'bg-rose-500/10 text-rose-300 border-rose-500/30 hover:bg-rose-500/20' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20'}`}
                           >
                             {paid ? 'Marcar pendiente' : 'Marcar pagado'}
                           </button>
@@ -2077,7 +2126,7 @@ export default function App() {
                   );
                 })}
                 {syndicate.members.length === 0 && (
-                  <p className="px-6 py-6 text-xs text-slate-500 italic">No hay socios. Añádelos desde la pestaña «Socios».</p>
+                  <p className="px-4 sm:px-6 py-6 text-xs text-slate-500 italic">No hay socios. Añádelos desde la pestaña «Socios».</p>
                 )}
               </div>
             </div>
@@ -2129,11 +2178,11 @@ export default function App() {
 
         {/* ================= SORTEOS ================= */}
         {activeTab === 'sorteos' && (
-          <div className="space-y-6">
+          <div className="space-y-6 min-w-0">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="min-w-0">
-                <h1 className="text-2xl font-extrabold text-white">Sorteos Jugados, Combinaciones y Boletos</h1>
-                <p className="text-sm text-slate-400">Todas nuestras apuestas jugadas por fecha: cada línea del boleto es una apuesta de 1 € (boletos de 4 o 5 apuestas). Lo que coincide con la oficial aparece en verde. La oficial se recupera sola a las 23:00.</p>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-white break-words">Sorteos Jugados, Combinaciones y Boletos</h1>
+                <p className="text-sm text-slate-400 break-words">Todas nuestras apuestas jugadas por fecha: cada línea del boleto es una apuesta de 1 € (boletos de 4 o 5 apuestas). Lo que coincide con la oficial aparece en verde. La oficial se recupera sola a las 23:00.</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {isAdmin && (
@@ -2154,10 +2203,10 @@ export default function App() {
               </div>
             </div>
 
-            <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-300"><Filter className="w-3.5 h-3.5 text-amber-400" /><span>Filtrar por mes:</span></div>
-                <div className="relative inline-flex items-center max-w-full">
+            <div className="min-w-0 overflow-hidden bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 min-w-0 w-full sm:w-auto">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-300"><Filter className="w-3.5 h-3.5 text-amber-400 shrink-0" /><span>Filtrar por mes:</span></div>
+                <div className="relative inline-flex items-center max-w-full min-w-0">
                   <select
                     aria-label="Filtrar por mes"
                     value={drawMonthFilter}
@@ -2192,41 +2241,41 @@ export default function App() {
 
         {/* ================= SOCIOS ================= */}
         {activeTab === 'socios' && (
-          <div className="space-y-6">
+          <div className="space-y-6 min-w-0">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-extrabold text-white">Alta, Baja y Detalle de Socios</h1>
-                <p className="text-sm text-slate-400">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-white break-words">Alta, Baja y Detalle de Socios</h1>
+                <p className="text-sm text-slate-400 break-words">
                   {syndicate.members.length} socios · cuota de {money(syndicate.monthlyFee)} · {paidThisMonth.size} pagados en {monthNameFromKey(activeMonth)}. Para cambiar el estado de la cuota, usa la pestaña «Cuotas».
                 </p>
               </div>
               {isAdmin && (
-                <button onClick={() => setShowMemberModal(true)} className="px-4 py-2 text-xs font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl shadow-md flex items-center gap-1.5">
+                <button onClick={() => setShowMemberModal(true)} className="px-4 py-2 text-xs font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl shadow-md flex items-center gap-1.5 shrink-0">
                   <UserPlus className="w-4 h-4" /> Añadir socio
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 min-w-0">
               {syndicate.members.map((member) => (
-                <div key={member.id} className="bg-slate-950/60 border border-slate-800 rounded-2xl p-5 space-y-4 hover:border-slate-700 transition-colors">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-600/30 to-slate-800 border border-emerald-500/30 flex items-center justify-center font-bold text-white text-sm">{member.name.slice(0, 2)}</div>
-                      <div>
-                        <div className="text-base font-bold text-white">{member.name}</div>
-                        <div className="text-xs text-slate-400">
+                <div key={member.id} className="min-w-0 w-full overflow-hidden bg-slate-950/60 border border-slate-800 rounded-2xl p-3.5 sm:p-5 space-y-3.5 sm:space-y-4 hover:border-slate-700 transition-colors">
+                  <div className="flex flex-wrap items-start justify-between gap-2 min-w-0">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-xl bg-gradient-to-br from-emerald-600/30 to-slate-800 border border-emerald-500/30 flex items-center justify-center font-bold text-white text-sm">{member.name.slice(0, 2)}</div>
+                      <div className="min-w-0">
+                        <div className="text-sm sm:text-base font-bold text-white break-words leading-tight">{member.name}</div>
+                        <div className="text-xs text-slate-400 break-words">
                           {member.joinedDate > firstJoinedDate ? `Incorporación: ${formatDateShort(member.joinedDate)}` : 'Socio fundador'}
                         </div>
                       </div>
                     </div>
-                    {renderPaymentPill(member)}
+                    <div className="shrink-0">{renderPaymentPill(member)}</div>
                   </div>
-                  <div className="bg-slate-900/60 rounded-xl p-3 flex items-center justify-between text-xs">
-                    <div>
+                  <div className="bg-slate-900/60 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="min-w-0">
                       <div className="text-slate-400">Total aportado:</div>
                       <div className="text-base font-bold text-emerald-400 tabular-nums mt-0.5">{money(member.totalPaid)}</div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right min-w-0">
                       <div className="text-slate-400">Estado cuota:</div>
                       <div className="mt-0.5 font-semibold">
                         {isPaidInMonth(member.id) ? (
@@ -2237,14 +2286,14 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-                  {member.notes && <div className="text-xs text-slate-400 bg-slate-900/40 p-2 rounded-lg border border-slate-800">{member.notes}</div>}
+                  {member.notes && <div className="text-xs text-slate-400 bg-slate-900/40 p-2 rounded-lg border border-slate-800 break-words">{member.notes}</div>}
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
                     <button onClick={() => { setSelectedMemberForHistory(member); setShowHistoryModal(true); }} className="px-2.5 py-1.5 text-xs font-medium text-slate-300 bg-slate-900 hover:bg-slate-800 hover:text-white rounded-lg border border-slate-800 flex items-center gap-1.5">
-                      <History className="w-3.5 h-3.5 text-emerald-400" /> Ver Pagos ({getMemberPayments(member).length})
+                      <History className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Ver Pagos ({getMemberPayments(member).length})
                     </button>
                     {isAdmin && (
                       <button onClick={() => void handleDeleteMember(member)} className="px-2.5 py-1.5 text-xs font-medium text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg border border-rose-500/30 flex items-center gap-1.5">
-                        <Trash2 className="w-3.5 h-3.5" /> Dar de baja
+                        <Trash2 className="w-3.5 h-3.5 shrink-0" /> Dar de baja
                       </button>
                     )}
                   </div>
@@ -2256,48 +2305,48 @@ export default function App() {
 
         {/* ================= ARRASTRE DE MESES ================= */}
         {activeTab === 'meses' && (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-extrabold text-white">Evolución y Arrastre de Meses</h1>
-              <p className="text-sm text-slate-400">Detalle mensual de aportaciones (cuotas y extras), apuestas, premios, repartos y saldo de caja arrastrado de forma transparente.</p>
+          <div className="space-y-6 min-w-0">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-white break-words">Evolución y Arrastre de Meses</h1>
+              <p className="text-sm text-slate-400 break-words">Detalle mensual de aportaciones (cuotas y extras), apuestas, premios, repartos y saldo de caja arrastrado de forma transparente.</p>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-4 min-w-0">
               <div className="hidden overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/60 md:block">
-                <div className="w-full">
-                  <table className="w-full table-auto text-left text-xs sm:text-sm">
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full table-auto text-left text-xs lg:text-sm">
                     <thead className="bg-slate-900/90 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
                       <tr>
-                        <th className="px-3 sm:px-4 py-3.5 font-semibold">Mes</th>
-                        <th className="px-3 sm:px-4 py-3.5 text-center font-semibold">Sorteos</th>
-                        <th className="px-3 sm:px-4 py-3.5 text-right font-semibold">Aportaciones</th>
-                        <th className="px-3 sm:px-4 py-3.5 text-right font-semibold">Gasto</th>
-                        <th className="px-3 sm:px-4 py-3.5 text-right font-semibold">Premios</th>
-                        <th className="px-3 sm:px-4 py-3.5 text-right font-semibold">Resultado neto</th>
-                        <th className="px-3 sm:px-4 py-3.5 text-right font-semibold">Caja arrastrada</th>
+                        <th className="px-2.5 lg:px-4 py-3.5 font-semibold">Mes</th>
+                        <th className="px-2.5 lg:px-4 py-3.5 text-center font-semibold">Sorteos</th>
+                        <th className="px-2.5 lg:px-4 py-3.5 text-right font-semibold">Aportaciones</th>
+                        <th className="px-2.5 lg:px-4 py-3.5 text-right font-semibold">Gasto</th>
+                        <th className="px-2.5 lg:px-4 py-3.5 text-right font-semibold">Premios</th>
+                        <th className="px-2.5 lg:px-4 py-3.5 text-right font-semibold">Resultado neto</th>
+                        <th className="px-2.5 lg:px-4 py-3.5 text-right font-semibold">Caja arrastrada</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
                       {monthlyData.map((month) => (
                         <tr key={month.monthKey} className="hover:bg-slate-900/40">
-                          <td className="px-3 sm:px-4 py-3 font-semibold text-white">{month.monthName}</td>
-                          <td className="px-3 sm:px-4 py-3 text-center text-slate-300">{month.drawsCount}</td>
-                          <td className="px-3 sm:px-4 py-3 text-right tabular-nums text-emerald-400 font-medium">{month.contributions > 0 ? `+${money(month.contributions)}` : '—'}</td>
-                          <td className="px-3 sm:px-4 py-3 text-right text-slate-300 tabular-nums">{money(month.cost)}</td>
-                          <td className="px-3 sm:px-4 py-3 text-right tabular-nums text-amber-400 font-bold">+{money(month.prizes)}</td>
-                          <td className={`px-3 sm:px-4 py-3 text-right tabular-nums ${month.netResult >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400'}`}>{month.netResult >= 0 ? '+' : ''}{money(month.netResult)}</td>
-                          <td className="px-3 sm:px-4 py-3 text-right font-extrabold text-emerald-400 tabular-nums">{money(month.carriedBalance)}</td>
+                          <td className="px-2.5 lg:px-4 py-3 font-semibold text-white">{month.monthName}</td>
+                          <td className="px-2.5 lg:px-4 py-3 text-center text-slate-300">{month.drawsCount}</td>
+                          <td className="px-2.5 lg:px-4 py-3 text-right tabular-nums text-emerald-400 font-medium">{month.contributions > 0 ? `+${money(month.contributions)}` : '—'}</td>
+                          <td className="px-2.5 lg:px-4 py-3 text-right text-slate-300 tabular-nums">{money(month.cost)}</td>
+                          <td className="px-2.5 lg:px-4 py-3 text-right tabular-nums text-amber-400 font-bold">+{money(month.prizes)}</td>
+                          <td className={`px-2.5 lg:px-4 py-3 text-right tabular-nums ${month.netResult >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400'}`}>{month.netResult >= 0 ? '+' : ''}{money(month.netResult)}</td>
+                          <td className="px-2.5 lg:px-4 py-3 text-right font-extrabold text-emerald-400 tabular-nums">{money(month.carriedBalance)}</td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot className="bg-slate-900 font-bold text-xs uppercase border-t-2 border-slate-800 text-white">
                       <tr>
-                        <td className="px-3 sm:px-4 py-3.5">Total acumulado</td>
-                        <td className="px-3 sm:px-4 py-3.5 text-center">{syndicate.draws.length}</td>
-                        <td className="px-3 sm:px-4 py-3.5 text-right text-emerald-400 tabular-nums">{money(totals.totalPagado)}</td>
-                        <td className="px-3 sm:px-4 py-3.5 text-right tabular-nums">{money(totals.totalJugado)}</td>
-                        <td className="px-3 sm:px-4 py-3.5 text-right text-amber-400 tabular-nums">{money(totals.totalPremios)}</td>
-                        <td className="px-3 sm:px-4 py-3.5 text-right tabular-nums">{money(totals.totalCaja)}</td>
-                        <td className="px-3 sm:px-4 py-3.5 text-right text-emerald-400 tabular-nums">{money(totals.totalCaja)}</td>
+                        <td className="px-2.5 lg:px-4 py-3.5">Total acumulado</td>
+                        <td className="px-2.5 lg:px-4 py-3.5 text-center">{syndicate.draws.length}</td>
+                        <td className="px-2.5 lg:px-4 py-3.5 text-right text-emerald-400 tabular-nums">{money(totals.totalPagado)}</td>
+                        <td className="px-2.5 lg:px-4 py-3.5 text-right tabular-nums">{money(totals.totalJugado)}</td>
+                        <td className="px-2.5 lg:px-4 py-3.5 text-right text-amber-400 tabular-nums">{money(totals.totalPremios)}</td>
+                        <td className="px-2.5 lg:px-4 py-3.5 text-right tabular-nums">{money(totals.totalCaja)}</td>
+                        <td className="px-2.5 lg:px-4 py-3.5 text-right text-emerald-400 tabular-nums">{money(totals.totalCaja)}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -2362,80 +2411,80 @@ export default function App() {
 
         {/* ================= REPARTO ================= */}
         {activeTab === 'reparto' && (
-          <div className="space-y-6">
+          <div className="space-y-6 min-w-0">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-extrabold text-white">Reparto Automático de Ganancias</h1>
-                <p className="text-sm text-slate-400">Simula o ejecuta un reparto equitativo entre los {syndicate.members.length} socios. Los importes ya abonados se descuentan de la caja.</p>
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-white break-words">Reparto Automático de Ganancias</h1>
+                <p className="text-sm text-slate-400 break-words">Simula o ejecuta un reparto equitativo entre los {syndicate.members.length} socios. Los importes ya abonados se descuentan de la caja.</p>
               </div>
               {isAdmin && (
-                <button onClick={() => setShowDistributeModal(true)} className="px-5 py-2.5 text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl shadow-md flex items-center gap-2">
+                <button onClick={() => setShowDistributeModal(true)} className="px-5 py-2.5 text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl shadow-md flex items-center gap-2 shrink-0">
                   <DollarSign className="w-4 h-4" /> Ejecutar Reparto Ahora
                 </button>
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-4 sm:p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 min-w-0">
+              <div className="min-w-0 overflow-hidden bg-slate-950/60 border border-slate-800 rounded-2xl p-3.5 space-y-4 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-base font-bold text-white flex items-center gap-2"><Trophy className="w-5 h-5 text-amber-400 shrink-0" /> Opción A: Repartir Premios ({money(totals.totalPremios)})</h3>
+                  <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2 min-w-0"><Trophy className="w-5 h-5 text-amber-400 shrink-0" /> <span className="break-words">Opción A: Repartir Premios ({money(totals.totalPremios)})</span></h3>
                   <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700 whitespace-nowrap">Seguir jugando</span>
                 </div>
                 <p className="text-xs text-slate-300">Conserva las aportaciones en caja para seguir jugando y reparte íntegramente los premios.</p>
-                <div className="bg-slate-900 rounded-xl p-4 flex items-center justify-between gap-3">
-                  <div><div className="text-xs text-slate-400">Cada socio recibe:</div><div className="text-2xl font-black text-amber-400 tabular-nums">{money(perMember(totals.totalPremios))}</div></div>
-                  <div className="text-right"><div className="text-xs text-slate-400">Caja restante:</div><div className="text-lg font-bold text-white tabular-nums">{money(totals.totalCaja - totals.totalPremios)}</div></div>
+                <div className="bg-slate-900 rounded-xl p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3">
+                  <div><div className="text-xs text-slate-400">Cada socio recibe:</div><div className="text-xl sm:text-2xl font-black text-amber-400 tabular-nums">{money(perMember(totals.totalPremios))}</div></div>
+                  <div className="text-right"><div className="text-xs text-slate-400">Caja restante:</div><div className="text-base sm:text-lg font-bold text-white tabular-nums">{money(totals.totalCaja - totals.totalPremios)}</div></div>
                 </div>
               </div>
-              <div className="bg-slate-950/60 border border-emerald-500/30 bg-emerald-950/10 rounded-2xl p-4 space-y-4 sm:p-6">
+              <div className="min-w-0 overflow-hidden bg-slate-950/60 border border-emerald-500/30 bg-emerald-950/10 rounded-2xl p-3.5 space-y-4 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-base font-bold text-white flex items-center gap-2"><Wallet className="w-5 h-5 text-emerald-400 shrink-0" /> Opción B: Liquidar la Caja ({money(totals.totalCaja)})</h3>
+                  <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2 min-w-0"><Wallet className="w-5 h-5 text-emerald-400 shrink-0" /> <span className="break-words">Opción B: Liquidar la Caja ({money(totals.totalCaja)})</span></h3>
                   <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded border border-emerald-500/40 font-bold whitespace-nowrap">★ Recomendada</span>
                 </div>
                 <p className="text-xs text-emerald-200/90 font-medium">Se liquida la caja en cervezas. Reparte todos los fondos disponibles para celebrarlo juntos y deja la caja a cero.</p>
-                <div className="bg-slate-900 rounded-xl p-4 flex items-center justify-between">
-                  <div><div className="text-xs text-slate-400">Cada socio recibe:</div><div className="text-2xl font-black text-emerald-400 tabular-nums">{money(perMember(totals.totalCaja))}</div></div>
-                  <div className="text-right"><div className="text-xs text-slate-400">Caja restante:</div><div className="text-lg font-bold text-slate-400 tabular-nums">{money(0)}</div></div>
+                <div className="bg-slate-900 rounded-xl p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3">
+                  <div><div className="text-xs text-slate-400">Cada socio recibe:</div><div className="text-xl sm:text-2xl font-black text-emerald-400 tabular-nums">{money(perMember(totals.totalCaja))}</div></div>
+                  <div className="text-right"><div className="text-xs text-slate-400">Caja restante:</div><div className="text-base sm:text-lg font-bold text-slate-400 tabular-nums">{money(0)}</div></div>
                 </div>
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/60">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 p-4 sm:p-5">
+            <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/60 min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 p-3.5 sm:p-5">
                 <h3 className="text-base font-bold text-white">Desglose de Reparto Equitativo por Socio</h3>
                 <span className="text-xs text-slate-400">{syndicate.members.length} socios con derecho a reparto</span>
               </div>
               <div className="hidden md:block">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full table-auto text-left text-xs lg:text-sm">
                     <thead className="bg-slate-900/90 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
                       <tr>
-                        <th className="px-6 py-4">Socio</th>
-                        <th className="px-6 py-4 text-center">Cuota {monthNameFromKey(activeMonth)}</th>
-                        <th className="px-6 py-4 text-right">Histórico</th>
-                        <th className="px-6 py-4 text-right">Parte premios</th>
-                        <th className="px-6 py-4 text-right">Parte caja</th>
-                        <th className="px-6 py-4 text-right">Saldo individual</th>
+                        <th className="px-3 lg:px-5 py-3.5">Socio</th>
+                        <th className="px-3 lg:px-5 py-3.5 text-center">Cuota {monthNameFromKey(activeMonth)}</th>
+                        <th className="px-3 lg:px-5 py-3.5 text-right">Histórico</th>
+                        <th className="px-3 lg:px-5 py-3.5 text-right">Parte premios</th>
+                        <th className="px-3 lg:px-5 py-3.5 text-right">Parte caja</th>
+                        <th className="px-3 lg:px-5 py-3.5 text-right">Saldo individual</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
                       {syndicate.members.map((member) => (
                         <tr key={member.id} className="hover:bg-slate-900/40">
-                          <td className="px-6 py-4 font-semibold text-white">{member.name}</td>
-                          <td className="px-6 py-4 text-center">{renderPaymentPill(member, activeMonth, true)}</td>
-                          <td className="px-6 py-4 text-right text-slate-300 tabular-nums">{money(member.totalPaid)}</td>
-                          <td className="px-6 py-4 text-right font-bold text-amber-400 tabular-nums">+{money(perMember(totals.totalPremios))}</td>
-                          <td className="px-6 py-4 text-right font-bold text-emerald-400 tabular-nums">+{money(perMember(totals.totalCaja))}</td>
-                          <td className="px-6 py-4 text-right font-bold text-white tabular-nums">{money(member.balance)}</td>
+                          <td className="px-3 lg:px-5 py-3.5 font-semibold text-white">{member.name}</td>
+                          <td className="px-3 lg:px-5 py-3.5 text-center">{renderPaymentPill(member, activeMonth, true)}</td>
+                          <td className="px-3 lg:px-5 py-3.5 text-right text-slate-300 tabular-nums">{money(member.totalPaid)}</td>
+                          <td className="px-3 lg:px-5 py-3.5 text-right font-bold text-amber-400 tabular-nums">+{money(perMember(totals.totalPremios))}</td>
+                          <td className="px-3 lg:px-5 py-3.5 text-right font-bold text-emerald-400 tabular-nums">+{money(perMember(totals.totalCaja))}</td>
+                          <td className="px-3 lg:px-5 py-3.5 text-right font-bold text-white tabular-nums">{money(member.balance)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               </div>
-              <div className="space-y-3 p-4 md:hidden">
+              <div className="space-y-3 p-3.5 md:hidden">
                 {syndicate.members.map((member) => (
-                  <div key={member.id} className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                  <div key={member.id} className="min-w-0 overflow-hidden space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3.5">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="min-w-0">
                         <h4 className="text-sm font-bold text-white break-words">{member.name}</h4>
@@ -2479,15 +2528,15 @@ export default function App() {
 
         {/* ================= HERRAMIENTAS FIJAS (SIN CONSULTAS LIBRES) ================= */}
         {activeTab === 'ai' && (
-          <div className="space-y-6 max-w-4xl mx-auto">
+          <div className="space-y-6 w-full min-w-0 max-w-4xl mx-auto">
             <div className="text-center space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs"><Sparkles className="w-3.5 h-3.5" /> Opciones fijas, sin consultas libres</div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Herramientas e IA de {syndicate.name}</h1>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs"><Sparkles className="w-3.5 h-3.5 shrink-0" /> Opciones fijas, sin consultas libres</div>
+              <h1 className="text-xl sm:text-3xl font-extrabold text-white break-words">Herramientas e IA de {syndicate.name}</h1>
               <p className="text-sm text-slate-400">Opciones automáticas, música de la peña y comunicados para el grupo.</p>
             </div>
 
             {/* OPCIÓN DE MÚSICA DE FONDO (IA Y HERRAMIENTAS) */}
-            <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/25 border border-amber-500/30 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
+            <div className="min-w-0 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/25 border border-amber-500/30 rounded-2xl p-3.5 sm:p-6 shadow-xl space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
                 <div className="flex items-start sm:items-center gap-3 min-w-0">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 transition-all ${
@@ -2531,8 +2580,8 @@ export default function App() {
               </div>
 
               {/* CANCIÓN ACTUAL Y SELECTOR DEL MÓVIL */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
+                <div className="min-w-0 bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
                   <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Canción activa</div>
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 text-amber-400">
@@ -2549,7 +2598,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between gap-2">
+                <div className="min-w-0 bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between gap-2">
                   <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Canciones del móvil</div>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
@@ -2606,26 +2655,26 @@ export default function App() {
               </div>
             </div>
             {/* SELECTOR DE RANGO DE FECHAS PARA NÚMEROS FRECUENTES Y APUESTAS */}
-            <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+            <div className="min-w-0 overflow-hidden bg-slate-950/70 border border-slate-800 rounded-2xl p-3.5 sm:p-5 space-y-4 shadow-xl">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                <div>
+                <div className="min-w-0">
                   <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-amber-400" />
-                    Rango de fechas para estadísticas de números
+                    <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span className="break-words">Rango de fechas para estadísticas de números</span>
                   </h3>
                   <p className="text-xs text-slate-400">
                     Elige el periodo para analizar qué bolas y reintegros han salido más veces en los sorteos oficiales de La Primitiva.
                   </p>
                 </div>
                 {officialStats && (
-                  <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full shrink-0">
+                  <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full shrink-0 self-start sm:self-center">
                     {isLoadingStats ? 'Cargando datos...' : `${officialStats.totalDraws} sorteos analizados`}
                   </span>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs min-w-0">
+                <div className="min-w-0">
                   <label className="text-[11px] font-medium text-slate-300 block mb-1">Desde fecha:</label>
                   <input
                     type="date"
@@ -2636,10 +2685,10 @@ export default function App() {
                         void loadOfficialStatsRange(e.target.value, statsToDate);
                       }
                     }}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-medium focus:border-amber-400"
+                    className="w-full min-w-0 max-w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-medium focus:border-amber-400"
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="text-[11px] font-medium text-slate-300 block mb-1">Hasta fecha:</label>
                   <input
                     type="date"
@@ -2650,7 +2699,7 @@ export default function App() {
                         void loadOfficialStatsRange(statsFromDate, e.target.value);
                       }
                     }}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-medium focus:border-amber-400"
+                    className="w-full min-w-0 max-w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-medium focus:border-amber-400"
                   />
                 </div>
                 <div className="sm:col-span-2 flex flex-col justify-end">
@@ -2815,9 +2864,9 @@ export default function App() {
                 disabled={isLoadingStats}
                 className="bg-gradient-to-br from-sky-500/10 via-slate-950 to-slate-950 border border-sky-500/35 hover:border-sky-400 disabled:opacity-60 rounded-xl p-4 text-left transition-all space-y-1"
               >
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-sm font-bold text-sky-300">5. Estrategia de Números Fríos</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">Bolas atrasadas</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 shrink-0">Bolas atrasadas</span>
                 </div>
                 <div className="text-xs text-slate-300">
                   Calcula de 1 a 8 apuestas con los números que llevan más tiempo sin salir buscando la corrección hacia la media.
@@ -2826,11 +2875,11 @@ export default function App() {
               <button
                 onClick={() => openBetCalculator('balanced')}
                 disabled={isLoadingStats}
-                className="bg-gradient-to-br from-emerald-500/10 via-slate-950 to-slate-950 border border-emerald-500/35 hover:border-emerald-400 disabled:opacity-60 rounded-xl p-4 text-left transition-all space-y-1"
+                className="min-w-0 bg-gradient-to-br from-emerald-500/10 via-slate-950 to-slate-950 border border-emerald-500/35 hover:border-emerald-400 disabled:opacity-60 rounded-xl p-4 text-left transition-all space-y-1"
               >
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-sm font-bold text-emerald-300">6. Fórmula de Oro (3 Pares / 3 Impares)</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">+65% sorteos</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shrink-0">+65% sorteos</span>
                 </div>
                 <div className="text-xs text-slate-300">
                   Genera de 1 a 8 apuestas con los números más calientes respetando el equilibrio histórico 3 pares y 3 impares.
@@ -2839,11 +2888,11 @@ export default function App() {
               <button
                 onClick={() => openReintegrosStudy()}
                 disabled={isLoadingStats}
-                className="bg-gradient-to-br from-amber-500/10 via-slate-950 to-slate-950 border border-amber-500/35 hover:border-amber-400 disabled:opacity-60 rounded-xl p-4 text-left transition-all space-y-1 sm:col-span-2"
+                className="min-w-0 bg-gradient-to-br from-amber-500/10 via-slate-950 to-slate-950 border border-amber-500/35 hover:border-amber-400 disabled:opacity-60 rounded-xl p-4 text-left transition-all space-y-1 sm:col-span-2"
               >
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-sm font-bold text-amber-300">7. Estudio de Reintegros y Rentabilidad</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Ranking 0 – 9</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 shrink-0">Ranking 0 – 9</span>
                 </div>
                 <div className="text-xs text-slate-300">
                   Gráfica comparativa de reintegros en el periodo elegido para maximizar las semanas en que el boleto sale gratis.
@@ -2852,7 +2901,7 @@ export default function App() {
               {isAdmin && (
                 <button
                   onClick={() => setShowFixedQueryModal(true)}
-                  className="bg-emerald-950/50 border border-emerald-700/50 hover:border-emerald-400 rounded-xl p-4 text-left transition-colors space-y-1 sm:col-span-2"
+                  className="min-w-0 bg-emerald-950/50 border border-emerald-700/50 hover:border-emerald-400 rounded-xl p-4 text-left transition-colors space-y-1 sm:col-span-2"
                 >
                   <div className="text-sm font-semibold text-emerald-300">8. Añadir consulta personalizada</div>
                   <div className="text-xs text-slate-400">Añadir otra opción fija solo por el administrador. Se guarda para todos los socios.</div>
@@ -2861,7 +2910,7 @@ export default function App() {
             </div>
 
             {aiResponse && (
-              <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-xl">
+              <div className="min-w-0 overflow-hidden bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 sm:p-5 space-y-3 shadow-xl">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="text-xs font-semibold text-amber-400 flex items-center gap-1.5"><Sparkles className="w-4 h-4 shrink-0" /> Resultado (también copiado al portapapeles)</div>
                   <a
@@ -2873,11 +2922,11 @@ export default function App() {
                     <Share2 className="w-3.5 h-3.5" /> Abrir en WhatsApp
                   </a>
                 </div>
-                <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 text-sm text-slate-200 leading-relaxed whitespace-pre-line break-words font-sans">{aiResponse}</div>
+                <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 sm:p-4 text-sm text-slate-200 leading-relaxed whitespace-pre-line break-words [overflow-wrap:anywhere] font-sans">{aiResponse}</div>
               </div>
             )}
 
-            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-xl">
+            <div className="min-w-0 overflow-hidden bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 sm:p-5 space-y-3 shadow-xl">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h2 className="text-sm font-semibold text-white">Opciones fijas añadidas</h2>
@@ -2989,8 +3038,8 @@ export default function App() {
               </div>
               {editingCombinationKind === 'official' && (
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-400">Joker (opcional)</label>
-                  <input type="text" value={winningForm.joker} onChange={(e) => setWinningForm({ ...winningForm, joker: e.target.value })} placeholder="Ej: 1234567" className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-center text-white font-mono text-xs" />
+                  <label className="text-xs font-medium text-slate-400">Joker (solo si se jugó)</label>
+                  <input type="text" value={winningForm.joker} onChange={(e) => setWinningForm({ ...winningForm, joker: e.target.value.replace(/\D/g, '').slice(0, 7) })} placeholder="NO (sin Joker)" className="w-full min-w-0 bg-slate-900 border border-slate-700 rounded-lg p-2 text-center text-white font-mono text-xs" />
                 </div>
               )}
             </div>
@@ -3350,18 +3399,21 @@ export default function App() {
 
               <div className="space-y-1.5">
                 <label htmlFor="draw-joker" className="text-xs font-medium text-slate-300">
-                  Joker (opcional):
+                  Joker (solo si se juega):
                 </label>
                 <input
                   id="draw-joker"
                   type="text"
                   inputMode="numeric"
                   maxLength={7}
-                  placeholder="Ej: 7368894"
+                  placeholder="NO (no jugado)"
                   value={newDrawJoker}
                   onChange={(e) => setNewDrawJoker(e.target.value.replace(/\D/g, '').slice(0, 7))}
                   className="w-full min-w-0 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:border-amber-400"
                 />
+                <p className="text-[10px] text-slate-400">
+                  Déjalo vacío si el boleto pone «JOKER: NO» (no pongas el nº de referencia).
+                </p>
               </div>
             </div>
 
@@ -3505,7 +3557,7 @@ export default function App() {
                 <p className="text-xs text-slate-500 italic">No hay aportaciones registradas individualmente.</p>
               )}
             </div>
-            <div className="bg-slate-900/60 rounded-xl p-3.5 border border-slate-800/80 flex items-center justify-between text-xs">
+            <div className="bg-slate-900/60 rounded-xl p-3.5 border border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs">
               <span><span className="text-slate-400">Estado en {monthNameFromKey(activeMonth)}:</span> <span className={`font-semibold ${isPaidInMonth(selectedMemberForHistory.id) ? 'text-emerald-400' : 'text-rose-400'}`}>{isPaidInMonth(selectedMemberForHistory.id) ? 'Cuota pagada' : 'Cuota pendiente'}</span></span>
               <span><span className="text-slate-400">Total aportado:</span> <strong className="text-white text-sm tabular-nums">{money(totalAportado)}</strong></span>
             </div>

@@ -270,7 +270,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [5, 19, 22, 32, 39, 49] },
         { line: 5, numbers: [2, 6, 24, 28, 30, 49] }
       ],
-      officialCombination: { numbers: [5, 8, 23, 28, 40, 44], complementario: 18, reintegro: 6, joker: "4706895" }
+      officialCombination: { numbers: [5, 8, 23, 28, 40, 44], complementario: 18, reintegro: 6 }
     },
     { id: "d_2", index: 2, date: "2026-03-19", ticketImage: "/assets/boletos/2026-03-19.jpg", displayDate: "19/03/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 8.0, notes: "¡Premio de 8 €!", jokerPlayed: false, status: "jugado",
       lines: [
@@ -280,7 +280,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [9, 17, 18, 22, 24, 45] },
         { line: 5, numbers: [1, 2, 25, 26, 31, 49] }
       ],
-      officialCombination: { numbers: [10, 17, 18, 30, 34, 45], complementario: 6, reintegro: 6, joker: "9618596" }
+      officialCombination: { numbers: [10, 17, 18, 30, 34, 45], complementario: 6, reintegro: 6 }
     },
     { id: "d_3", index: 3, date: "2026-03-26", ticketImage: "/assets/boletos/2026-03-26.jpg", displayDate: "26/03/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -290,7 +290,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [4, 15, 18, 28, 42, 43] },
         { line: 5, numbers: [4, 8, 12, 27, 30, 35] }
       ],
-      officialCombination: { numbers: [3, 15, 25, 38, 44, 46], complementario: 21, reintegro: 6, joker: "3929930" }
+      officialCombination: { numbers: [3, 15, 25, 38, 44, 46], complementario: 21, reintegro: 6 }
     },
     { id: "d_4", index: 4, date: "2026-04-02", ticketImage: "/assets/boletos/2026-04-02.jpg", displayDate: "02/04/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -300,7 +300,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [1, 17, 32, 34, 47, 49] },
         { line: 5, numbers: [12, 33, 37, 39, 44, 46] }
       ],
-      officialCombination: { numbers: [5, 11, 18, 22, 38, 44], complementario: 12, reintegro: 3, joker: "6317039" }
+      officialCombination: { numbers: [5, 11, 18, 22, 38, 44], complementario: 12, reintegro: 3 }
     },
     { id: "d_5", index: 5, date: "2026-04-09", ticketImage: "/assets/boletos/2026-04-09.jpg", displayDate: "09/04/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -310,7 +310,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [1, 17, 32, 34, 47, 49] },
         { line: 5, numbers: [12, 33, 37, 39, 44, 46] }
       ],
-      officialCombination: { numbers: [4, 23, 24, 30, 38, 40], complementario: 45, reintegro: 4, joker: "1533357" }
+      officialCombination: { numbers: [4, 23, 24, 30, 38, 40], complementario: 45, reintegro: 4 }
     },
     { id: "d_6", index: 6, date: "2026-04-16", ticketImage: "/assets/boletos/2026-04-16.jpg", displayDate: "16/04/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -320,7 +320,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [9, 15, 16, 21, 47, 48] },
         { line: 5, numbers: [2, 5, 7, 32, 38, 39] }
       ],
-      officialCombination: { numbers: [9, 10, 16, 36, 42, 43], complementario: 31, reintegro: 8, joker: "5121352" }
+      officialCombination: { numbers: [9, 10, 16, 36, 42, 43], complementario: 31, reintegro: 8 }
     },
     { id: "d_7", index: 7, date: "2026-04-23", ticketImage: "/assets/boletos/2026-04-23.jpg", displayDate: "23/04/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -330,7 +330,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [7, 17, 18, 19, 21, 49] },
         { line: 5, numbers: [8, 16, 23, 34, 37, 45] }
       ],
-      officialCombination: { numbers: [11, 13, 20, 26, 27, 34], complementario: 10, reintegro: 8, joker: "2819883" }
+      officialCombination: { numbers: [11, 13, 20, 26, 27, 34], complementario: 10, reintegro: 8 }
     },
     { id: "d_8", index: 8, date: "2026-04-30", ticketImage: "/assets/boletos/2026-04-30.jpg", displayDate: "30/04/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 5.0, notes: "Premio de 5 €", jokerPlayed: false, status: "jugado",
       lines: [
@@ -340,7 +340,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [9, 20, 22, 38, 41, 42] },
         { line: 5, numbers: [19, 21, 22, 23, 30, 41] }
       ],
-      officialCombination: { numbers: [7, 8, 9, 13, 28, 42], complementario: 29, reintegro: 8, joker: "0754026" }
+      officialCombination: { numbers: [7, 8, 9, 13, 28, 42], complementario: 29, reintegro: 8 }
     },
     { id: "d_9", index: 9, date: "2026-05-07", ticketImage: "/assets/boletos/2026-05-07.jpg", displayDate: "07/05/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 8.0, notes: "¡Premio de 8 €!", jokerPlayed: false, status: "jugado",
       lines: [
@@ -350,7 +350,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [1, 11, 14, 21, 39, 40] },
         { line: 5, numbers: [1, 4, 18, 28, 35, 45] }
       ],
-      officialCombination: { numbers: [1, 6, 7, 13, 25, 48], complementario: 5, reintegro: 5, joker: "6842292" }
+      officialCombination: { numbers: [1, 6, 7, 13, 25, 48], complementario: 5, reintegro: 5 }
     },
     { id: "d_10", index: 10, date: "2026-05-14", ticketImage: "/assets/boletos/2026-05-14.jpg", displayDate: "14/05/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -360,7 +360,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [2, 13, 16, 23, 32, 38] },
         { line: 5, numbers: [1, 4, 18, 19, 21, 42] }
       ],
-      officialCombination: { numbers: [2, 5, 8, 20, 21, 22], complementario: 44, reintegro: 3, joker: "4947408" }
+      officialCombination: { numbers: [2, 5, 8, 20, 21, 22], complementario: 44, reintegro: 3 }
     },
     { id: "d_11", index: 11, date: "2026-05-21", ticketImage: "/assets/boletos/2026-05-21.jpg", displayDate: "21/05/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -370,7 +370,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [2, 13, 16, 23, 32, 38] },
         { line: 5, numbers: [1, 4, 18, 19, 21, 42] }
       ],
-      officialCombination: { numbers: [9, 12, 18, 33, 37, 49], complementario: 31, reintegro: 3, joker: "7680567" }
+      officialCombination: { numbers: [9, 12, 18, 33, 37, 49], complementario: 31, reintegro: 3 }
     },
     { id: "d_12", index: 12, date: "2026-05-28", ticketImage: "/assets/boletos/2026-05-28.jpg", displayDate: "28/05/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 8.0, notes: "¡Premio de 8 €!", jokerPlayed: false, status: "jugado",
       lines: [
@@ -380,7 +380,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [3, 21, 31, 42, 43, 44] },
         { line: 5, numbers: [23, 26, 29, 38, 46, 48] }
       ],
-      officialCombination: { numbers: [3, 9, 10, 26, 43, 46], complementario: 5, reintegro: 4, joker: "3066493" }
+      officialCombination: { numbers: [3, 9, 10, 26, 43, 46], complementario: 5, reintegro: 4 }
     },
     { id: "d_13", index: 13, date: "2026-06-06", ticketImage: "/assets/boletos/2026-06-06.jpg", displayDate: "06/06/26", dayOfWeek: "Sábado", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -390,7 +390,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [3, 21, 31, 42, 43, 44] },
         { line: 5, numbers: [23, 26, 29, 38, 46, 48] }
       ],
-      officialCombination: { numbers: [1, 6, 16, 17, 37, 43], complementario: 5, reintegro: 7, joker: "9910395" }
+      officialCombination: { numbers: [1, 6, 16, 17, 37, 43], complementario: 5, reintegro: 7 }
     },
     { id: "d_14", index: 14, date: "2026-06-11", ticketImage: "/assets/boletos/2026-06-11.jpg", displayDate: "11/06/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -400,7 +400,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [1, 6, 8, 24, 35, 38] },
         { line: 5, numbers: [6, 15, 31, 33, 34, 46] }
       ],
-      officialCombination: { numbers: [12, 15, 22, 30, 32, 49], complementario: 33, reintegro: 8, joker: "3449409" }
+      officialCombination: { numbers: [12, 15, 22, 30, 32, 49], complementario: 33, reintegro: 8 }
     },
     { id: "d_15", index: 15, date: "2026-06-18", ticketImage: "/assets/boletos/2026-06-18.jpg", displayDate: "18/06/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -410,7 +410,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [3, 21, 31, 42, 43, 44] },
         { line: 5, numbers: [23, 26, 29, 38, 46, 48] }
       ],
-      officialCombination: { numbers: [1, 10, 13, 25, 27, 38], complementario: 33, reintegro: 6, joker: "6452737" }
+      officialCombination: { numbers: [1, 10, 13, 25, 27, 38], complementario: 33, reintegro: 6 }
     },
     { id: "d_16", index: 16, date: "2026-07-02", ticketImage: "/assets/boletos/2026-07-02.jpg", displayDate: "02/07/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -420,7 +420,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [3, 21, 31, 42, 43, 44] },
         { line: 5, numbers: [23, 26, 29, 38, 46, 48] }
       ],
-      officialCombination: { numbers: [5, 12, 14, 33, 35, 40], complementario: 9, reintegro: 5, joker: "9423082" }
+      officialCombination: { numbers: [5, 12, 14, 33, 35, 40], complementario: 9, reintegro: 5 }
     },
     { id: "d_17", index: 17, date: "2026-07-09", ticketImage: "/assets/boletos/2026-07-09.jpg", displayDate: "09/07/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -430,7 +430,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [2, 5, 14, 15, 31, 45] },
         { line: 5, numbers: [6, 8, 28, 32, 46, 47] }
       ],
-      officialCombination: { numbers: [22, 28, 30, 35, 38, 43], complementario: 3, reintegro: 8, joker: "1482783" }
+      officialCombination: { numbers: [22, 28, 30, 35, 38, 43], complementario: 3, reintegro: 8 }
     },
     { id: "d_18", index: 18, date: "2026-08-01", ticketImage: "/assets/boletos/2026-08-01.jpg", displayDate: "01/08/26", dayOfWeek: "Sábado", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -440,7 +440,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [5, 8, 9, 20, 27, 47] },
         { line: 5, numbers: [5, 10, 22, 33, 39, 43] }
       ],
-      officialCombination: { numbers: [3, 7, 15, 42, 43, 49], complementario: 44, reintegro: 9, joker: "7265376" }
+      officialCombination: { numbers: [3, 7, 15, 42, 43, 49], complementario: 44, reintegro: 9 }
     },
     { id: "d_19", index: 19, date: "2026-08-06", ticketImage: "/assets/boletos/2026-08-06.jpg", displayDate: "06/08/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -450,7 +450,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [12, 17, 29, 31, 36, 47] },
         { line: 5, numbers: [10, 16, 17, 26, 32, 43] }
       ],
-      officialCombination: { numbers: [3, 9, 14, 19, 22, 26], complementario: 13, reintegro: 4, joker: "0559707" }
+      officialCombination: { numbers: [3, 9, 14, 19, 22, 26], complementario: 13, reintegro: 4 }
     },
     { id: "d_20", index: 20, date: "2026-08-13", ticketImage: "/assets/boletos/2026-08-13.jpg", displayDate: "13/08/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -460,7 +460,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [12, 17, 29, 31, 36, 47] },
         { line: 5, numbers: [10, 16, 17, 26, 32, 43] }
       ],
-      officialCombination: { numbers: [21, 27, 33, 41, 48, 49], complementario: 11, reintegro: 2, joker: "8219703" }
+      officialCombination: { numbers: [21, 27, 33, 41, 48, 49], complementario: 11, reintegro: 2 }
     },
     { id: "d_21", index: 21, date: "2026-08-22", ticketImage: "/assets/boletos/2026-08-22.jpg", displayDate: "22/08/26", dayOfWeek: "Sábado", betCost: 5.0, prizeWon: 5.0, notes: "Premio de 5 €", jokerPlayed: false, status: "jugado",
       lines: [
@@ -470,7 +470,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [2, 3, 18, 19, 41, 42] },
         { line: 5, numbers: [2, 18, 24, 27, 39, 46] }
       ],
-      officialCombination: { numbers: [5, 22, 30, 34, 45, 49], complementario: 46, reintegro: 8, joker: "8352771" }
+      officialCombination: { numbers: [5, 22, 30, 34, 45, 49], complementario: 46, reintegro: 8 }
     },
     { id: "d_22", index: 22, date: "2026-08-27", ticketImage: "/assets/boletos/2026-08-27.jpg", displayDate: "27/08/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -480,7 +480,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [9, 12, 18, 36, 41, 49] },
         { line: 5, numbers: [8, 9, 21, 23, 39, 48] }
       ],
-      officialCombination: { numbers: [2, 8, 9, 33, 36, 38], complementario: 48, reintegro: 3, joker: "7016152" }
+      officialCombination: { numbers: [2, 8, 9, 33, 36, 38], complementario: 48, reintegro: 3 }
     },
     { id: "d_23", index: 23, date: "2026-09-03", ticketImage: "/assets/boletos/2026-09-03.jpg", displayDate: "03/09/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -490,7 +490,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [7, 19, 24, 25, 30, 44] },
         { line: 5, numbers: [11, 12, 34, 35, 36, 41] }
       ],
-      officialCombination: { numbers: [20, 24, 29, 34, 39, 40], complementario: 13, reintegro: 5, joker: "6686741" }
+      officialCombination: { numbers: [20, 24, 29, 34, 39, 40], complementario: 13, reintegro: 5 }
     },
     { id: "d_24", index: 24, date: "2026-09-05", ticketImage: "/assets/boletos/2026-09-05.jpg", displayDate: "05/09/26", dayOfWeek: "Sábado", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -500,7 +500,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [4, 9, 20, 21, 28, 32] },
         { line: 5, numbers: [5, 8, 13, 31, 44, 49] }
       ],
-      officialCombination: { numbers: [3, 12, 19, 31, 45, 47], complementario: 1, reintegro: 3, joker: "6414438" }
+      officialCombination: { numbers: [3, 12, 19, 31, 45, 47], complementario: 1, reintegro: 3 }
     },
     { id: "d_25", index: 25, date: "2026-09-10", ticketImage: "/assets/boletos/2026-09-10.jpg", displayDate: "10/09/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -510,7 +510,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [15, 16, 21, 31, 32, 35] },
         { line: 5, numbers: [2, 6, 17, 37, 40, 45] }
       ],
-      officialCombination: { numbers: [17, 26, 35, 44, 45, 48], complementario: 3, reintegro: 5, joker: "3341852" }
+      officialCombination: { numbers: [17, 26, 35, 44, 45, 48], complementario: 3, reintegro: 5 }
     },
     { id: "d_26", index: 26, date: "2026-09-17", ticketImage: "/assets/boletos/2026-09-17.jpg", displayDate: "17/09/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -520,7 +520,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [12, 13, 24, 32, 48, 49] },
         { line: 5, numbers: [1, 3, 8, 10, 21, 39] }
       ],
-      officialCombination: { numbers: [19, 20, 24, 25, 43, 46], complementario: 47, reintegro: 8, joker: "1024255" }
+      officialCombination: { numbers: [19, 20, 24, 25, 43, 46], complementario: 47, reintegro: 8 }
     },
     { id: "d_27", index: 27, date: "2026-09-19", ticketImage: "/assets/boletos/2026-09-19.jpg", displayDate: "19/09/26", dayOfWeek: "Sábado", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -530,7 +530,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [5, 19, 26, 32, 47, 48] },
         { line: 5, numbers: [3, 6, 9, 16, 23, 29] }
       ],
-      officialCombination: { numbers: [7, 10, 40, 44, 45, 46], complementario: 19, reintegro: 4, joker: "8810028" }
+      officialCombination: { numbers: [7, 10, 40, 44, 45, 46], complementario: 19, reintegro: 4 }
     },
     { id: "d_45", index: 28, date: "2026-09-21", ticketImage: "/assets/boletos/2026-09-21.jpg", displayDate: "21/09/26", dayOfWeek: "Lunes", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -540,7 +540,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [1, 10, 12, 17, 25, 46] },
         { line: 5, numbers: [4, 20, 42, 44, 48, 49] }
       ],
-      officialCombination: { numbers: [1, 4, 20, 34, 36, 37], complementario: 18, reintegro: 1, joker: "1147192" }
+      officialCombination: { numbers: [1, 4, 20, 34, 36, 37], complementario: 18, reintegro: 1 }
     },
     { id: "d_28", index: 29, date: "2026-09-26", ticketImage: "/assets/boletos/2026-09-26.jpg", displayDate: "26/09/26", dayOfWeek: "Sábado", betCost: 5.0, prizeWon: 5.0, notes: "Premio de 5 €", jokerPlayed: false, status: "jugado",
       lines: [
@@ -550,7 +550,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [5, 8, 9, 13, 15, 43] },
         { line: 5, numbers: [1, 11, 16, 38, 41, 45] }
       ],
-      officialCombination: { numbers: [3, 9, 10, 30, 36, 45], complementario: 26, reintegro: 4, joker: "7368894" }
+      officialCombination: { numbers: [3, 9, 10, 30, 36, 45], complementario: 26, reintegro: 4 }
     },
     { id: "d_29", index: 30, date: "2026-10-01", ticketImage: "/assets/boletos/2026-10-01.jpg", displayDate: "01/10/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -560,7 +560,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [9, 32, 37, 39, 41, 47] },
         { line: 5, numbers: [2, 3, 20, 34, 38, 39] }
       ],
-      officialCombination: { numbers: [4, 14, 16, 22, 33, 45], complementario: 46, reintegro: 7, joker: "6965325" }
+      officialCombination: { numbers: [4, 14, 16, 22, 33, 45], complementario: 46, reintegro: 7 }
     },
     { id: "d_30", index: 31, date: "2026-10-03", ticketImage: "/assets/boletos/2026-10-03.jpg", displayDate: "03/10/26", dayOfWeek: "Sábado", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -570,7 +570,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [6, 12, 13, 32, 43, 46] },
         { line: 5, numbers: [18, 25, 26, 31, 36, 48] }
       ],
-      officialCombination: { numbers: [6, 20, 24, 27, 44, 45], complementario: 12, reintegro: 2, joker: "7407593" }
+      officialCombination: { numbers: [6, 20, 24, 27, 44, 45], complementario: 12, reintegro: 2 }
     },
     { id: "d_31", index: 32, date: "2026-10-05", ticketImage: "/assets/boletos/2026-10-05.jpg", displayDate: "05/10/26", dayOfWeek: "Lunes", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -580,7 +580,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [7, 31, 33, 37, 44, 49] },
         { line: 5, numbers: [5, 10, 15, 23, 43, 46] }
       ],
-      officialCombination: { numbers: [4, 10, 20, 25, 40, 49], complementario: 29, reintegro: 3, joker: "7459175" }
+      officialCombination: { numbers: [4, 10, 20, 25, 40, 49], complementario: 29, reintegro: 3 }
     },
     { id: "d_32", index: 33, date: "2026-10-08", ticketImage: "/assets/boletos/2026-10-08.jpg", displayDate: "08/10/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -590,7 +590,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [10, 14, 20, 21, 33, 34] },
         { line: 5, numbers: [1, 2, 13, 18, 28, 42] }
       ],
-      officialCombination: { numbers: [6, 7, 14, 16, 21, 37], complementario: 25, reintegro: 2, joker: "2445443" }
+      officialCombination: { numbers: [6, 7, 14, 16, 21, 37], complementario: 25, reintegro: 2 }
     },
     { id: "d_33", index: 34, date: "2026-10-15", ticketImage: "/assets/boletos/2026-10-15.jpg", displayDate: "15/10/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -600,7 +600,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [1, 2, 20, 33, 41, 46] },
         { line: 5, numbers: [2, 5, 7, 19, 44, 47] }
       ],
-      officialCombination: { numbers: [6, 17, 24, 35, 39, 47], complementario: 18, reintegro: 3, joker: "2666233" }
+      officialCombination: { numbers: [6, 17, 24, 35, 39, 47], complementario: 18, reintegro: 3 }
     },
     { id: "d_34", index: 35, date: "2026-10-17", ticketImage: "/assets/boletos/2026-10-17.jpg", displayDate: "17/10/26", dayOfWeek: "Sábado", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -610,7 +610,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [2, 13, 18, 40, 41, 46] },
         { line: 5, numbers: [9, 17, 29, 30, 33, 39] }
       ],
-      officialCombination: { numbers: [8, 9, 12, 14, 29, 45], complementario: 43, reintegro: 4, joker: "8525836" }
+      officialCombination: { numbers: [8, 9, 12, 14, 29, 45], complementario: 43, reintegro: 4 }
     },
     { id: "d_35", index: 36, date: "2026-10-22", ticketImage: "/assets/boletos/2026-10-22.jpg", displayDate: "22/10/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -620,7 +620,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [3, 8, 10, 29, 39, 42] },
         { line: 5, numbers: [3, 7, 8, 19, 36, 42] }
       ],
-      officialCombination: { numbers: [1, 13, 22, 35, 42, 49], complementario: 17, reintegro: 1, joker: "3832054" }
+      officialCombination: { numbers: [1, 13, 22, 35, 42, 49], complementario: 17, reintegro: 1 }
     },
     { id: "d_36", index: 37, date: "2026-10-24", ticketImage: "/assets/boletos/2026-10-24.jpg", displayDate: "24/10/26", dayOfWeek: "Sábado", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -630,7 +630,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [6, 16, 17, 24, 26, 27] },
         { line: 5, numbers: [13, 17, 32, 38, 41, 47] }
       ],
-      officialCombination: { numbers: [4, 5, 10, 31, 47, 48], complementario: 37, reintegro: 4, joker: "5745931" }
+      officialCombination: { numbers: [4, 5, 10, 31, 47, 48], complementario: 37, reintegro: 4 }
     },
     { id: "d_37", index: 38, date: "2026-10-29", ticketImage: "/assets/boletos/2026-10-29-31.jpg", displayDate: "29/10/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -640,7 +640,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [7, 18, 22, 23, 25, 31] },
         { line: 5, numbers: [9, 10, 11, 13, 15, 35] }
       ],
-      officialCombination: { numbers: [2, 18, 19, 28, 31, 44], complementario: 9, reintegro: 9, joker: "3013180" }
+      officialCombination: { numbers: [2, 18, 19, 28, 31, 44], complementario: 9, reintegro: 9 }
     },
     { id: "d_38", index: 39, date: "2026-10-31", ticketImage: "/assets/boletos/2026-10-29-31.jpg", displayDate: "31/10/26", dayOfWeek: "Sábado", betCost: 5.0, prizeWon: 8.0, notes: "¡Premio de 8 €!", jokerPlayed: false, status: "jugado",
       lines: [
@@ -650,7 +650,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [7, 18, 22, 23, 25, 31] },
         { line: 5, numbers: [9, 10, 11, 13, 15, 35] }
       ],
-      officialCombination: { numbers: [2, 6, 8, 17, 27, 30], complementario: 47, reintegro: 1, joker: "6262149" }
+      officialCombination: { numbers: [2, 6, 8, 17, 27, 30], complementario: 47, reintegro: 1 }
     },
     { id: "d_39", index: 40, date: "2026-11-05", ticketImage: "/assets/boletos/2026-11-05-07.jpg", displayDate: "05/11/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -660,7 +660,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [5, 19, 20, 30, 32, 41] },
         { line: 5, numbers: [11, 15, 34, 38, 44, 48] }
       ],
-      officialCombination: { numbers: [4, 8, 9, 15, 31, 32], complementario: 2, reintegro: 3, joker: "6539402" }
+      officialCombination: { numbers: [4, 8, 9, 15, 31, 32], complementario: 2, reintegro: 3 }
     },
     { id: "d_40", index: 41, date: "2026-11-07", ticketImage: "/assets/boletos/2026-11-05-07.jpg", displayDate: "07/11/26", dayOfWeek: "Sábado", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -670,13 +670,13 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [5, 19, 20, 30, 32, 41] },
         { line: 5, numbers: [11, 15, 34, 38, 44, 48] }
       ],
-      officialCombination: { numbers: [9, 13, 19, 25, 26, 30], complementario: 34, reintegro: 4, joker: "5497624" }
+      officialCombination: { numbers: [9, 13, 19, 25, 26, 30], complementario: 34, reintegro: 4 }
     },
     { id: "d_41", index: 42, date: "2026-11-12", displayDate: "12/11/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
-      officialCombination: { numbers: [4, 10, 21, 32, 33, 45], complementario: 24, reintegro: 9, joker: "6606881" }
+      officialCombination: { numbers: [4, 10, 21, 32, 33, 45], complementario: 24, reintegro: 9 }
     },
     { id: "d_42", index: 43, date: "2026-11-14", displayDate: "14/11/26", dayOfWeek: "Sábado", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
-      officialCombination: { numbers: [3, 22, 24, 30, 48, 49], complementario: 37, reintegro: 1, joker: "8820777" }
+      officialCombination: { numbers: [3, 22, 24, 30, 48, 49], complementario: 37, reintegro: 1 }
     },
     { id: "d_43", index: 44, date: "2026-11-19", ticketImage: "/assets/boletos/2026-11-19-21.jpg", displayDate: "19/11/26", dayOfWeek: "Jueves", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -686,7 +686,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [7, 18, 22, 23, 25, 31] },
         { line: 5, numbers: [9, 10, 11, 13, 15, 35] }
       ],
-      officialCombination: { numbers: [20, 23, 36, 41, 44, 49], complementario: 34, reintegro: 3, joker: "0452653" }
+      officialCombination: { numbers: [20, 23, 36, 41, 44, 49], complementario: 34, reintegro: 3 }
     },
     { id: "d_44", index: 45, date: "2026-11-21", ticketImage: "/assets/boletos/2026-11-19-21.jpg", displayDate: "21/11/26", dayOfWeek: "Sábado", betCost: 5.0, prizeWon: 0.0, jokerPlayed: false, status: "jugado",
       lines: [
@@ -696,7 +696,7 @@ export const REAL_SYNDICATE_DATA: SyndicateData = {
         { line: 4, numbers: [7, 18, 22, 23, 25, 31] },
         { line: 5, numbers: [9, 10, 11, 13, 15, 35] }
       ],
-      officialCombination: { numbers: [7, 12, 13, 22, 29, 39], complementario: 15, reintegro: 2, joker: "0031430" }
+      officialCombination: { numbers: [7, 12, 13, 22, 29, 39], complementario: 15, reintegro: 2 }
     }
   ]
 };

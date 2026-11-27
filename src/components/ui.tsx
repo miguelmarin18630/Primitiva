@@ -66,16 +66,16 @@ interface StatCardProps {
 export function StatCard({ label, value, hint, icon, tone = 'slate', highlighted = false }: StatCardProps) {
   return (
     <div
-      className={`${highlighted ? 'bg-gradient-to-br from-emerald-950/80 via-slate-950 to-slate-950 border-2 border-emerald-500/40 shadow-lg' : 'bg-slate-950/70 border border-slate-800 shadow-sm'} rounded-2xl p-5 transition-colors hover:border-slate-600`}
+      className={`min-w-0 overflow-hidden ${highlighted ? 'bg-gradient-to-br from-emerald-950/80 via-slate-950 to-slate-950 border-2 border-emerald-500/40 shadow-lg' : 'bg-slate-950/70 border border-slate-800 shadow-sm'} rounded-2xl p-4 sm:p-5 transition-colors hover:border-slate-600`}
     >
-      <div className={`flex items-center justify-between text-xs mb-2 font-medium ${highlighted ? 'text-emerald-400 font-bold uppercase tracking-wider' : 'text-slate-400'}`}>
-        <span>{label}</span>
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${toneIcon[tone]}`}>{icon}</div>
+      <div className={`flex items-center justify-between gap-2 text-xs mb-2 font-medium ${highlighted ? 'text-emerald-400 font-bold uppercase tracking-wider' : 'text-slate-400'}`}>
+        <span className="min-w-0 break-words">{label}</span>
+        <div className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center ${toneIcon[tone]}`}>{icon}</div>
       </div>
-      <div className={`text-2xl font-extrabold tabular-nums ${highlighted ? 'text-emerald-400' : tone === 'amber' ? 'text-amber-400' : tone === 'emerald' ? 'text-emerald-400' : 'text-white'}`}>
+      <div className={`text-xl sm:text-2xl font-extrabold tabular-nums break-words ${highlighted ? 'text-emerald-400' : tone === 'amber' ? 'text-amber-400' : tone === 'emerald' ? 'text-emerald-400' : 'text-white'}`}>
         {value}
       </div>
-      <div className={`text-[11px] mt-1.5 font-medium ${highlighted ? 'text-emerald-300' : tone === 'slate' ? 'text-slate-400' : toneIcon[tone].split(' ')[1]}`}>
+      <div className={`text-[11px] mt-1.5 font-medium break-words ${highlighted ? 'text-emerald-300' : tone === 'slate' ? 'text-slate-400' : toneIcon[tone].split(' ')[1]}`}>
         {hint}
       </div>
     </div>
@@ -88,9 +88,10 @@ interface CombinationBallsProps {
   /** Combinación contraria: sus valores iguales se resaltan en verde. */
   compareWith?: WinningCombination;
   tone?: 'bet' | 'official';
+  showJoker?: boolean;
 }
 
-export function CombinationBalls({ combination, large = false, compareWith, tone = 'bet' }: CombinationBallsProps) {
+export function CombinationBalls({ combination, large = false, compareWith, tone = 'bet', showJoker = true }: CombinationBallsProps) {
   const size = large ? 'w-7 h-7 text-xs' : 'w-6 h-6 text-xs';
   const matchedNumbers = new Set(compareWith?.numbers ?? []);
   const match = (matched: boolean, base: string) =>
@@ -122,7 +123,7 @@ export function CombinationBalls({ combination, large = false, compareWith, tone
       >
         R{combination.reintegro}
       </span>
-      {combination.joker && (
+      {showJoker && combination.joker && (
         <span className={`px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-xs border border-slate-700 ml-1 ${compareWith?.joker === combination.joker ? 'ring-2 ring-emerald-300 text-white' : ''}`}>
           Joker: {combination.joker}
         </span>
@@ -145,6 +146,7 @@ export function CombinationComparison({ bets, official, jokerPlayed, large = fal
     : undefined;
   const uniqueReintegros = [...new Set(bets.map((bet) => bet.reintegro).filter((r): r is number => r !== undefined))];
   const sharedReintegro = uniqueReintegros.length === 1 ? uniqueReintegros[0] : undefined;
+  const jokerNotPlayed = jokerPlayed !== true;
 
   return (
     <div className="space-y-1.5 min-w-0 w-full">
@@ -181,13 +183,15 @@ export function CombinationComparison({ bets, official, jokerPlayed, large = fal
                     R{bet.reintegro}
                   </span>
                 )}
-                <span className={`text-[10px] ml-0.5 ${aciertos >= 4 ? 'text-emerald-300 font-bold' : 'text-slate-500'}`}>
-                  {aciertos} aciertos
-                </span>
+                {official && (
+                  <span className={`text-[10px] ml-0.5 ${aciertos >= 4 ? 'text-emerald-300 font-bold' : 'text-slate-500'}`}>
+                    {aciertos} aciertos
+                  </span>
+                )}
               </div>
             );
           })}
-          {(sharedReintegro !== undefined || jokerPlayed === false) && (
+          {(sharedReintegro !== undefined || jokerNotPlayed) && (
             <div className="flex flex-wrap items-center gap-2 pt-0.5">
               {sharedReintegro !== undefined && (
                 <span
@@ -199,9 +203,9 @@ export function CombinationComparison({ bets, official, jokerPlayed, large = fal
                   Reintegro: {sharedReintegro}
                 </span>
               )}
-              {jokerPlayed === false && (
+              {jokerNotPlayed && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-800/90 text-slate-300 font-mono text-[11px] border border-slate-700">
-                  Joker: No
+                  Joker: NO
                 </span>
               )}
             </div>
@@ -210,18 +214,18 @@ export function CombinationComparison({ bets, official, jokerPlayed, large = fal
       ) : (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[11px] text-slate-500 italic">No guardamos los números jugados en este sorteo.</span>
-          {jokerPlayed === false && (
+          {jokerNotPlayed && (
             <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-800/90 text-slate-300 font-mono text-[11px] border border-slate-700">
-              Joker: No
+              Joker: NO
             </span>
           )}
         </div>
       )}
       <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 pt-0.5">Ganadora oficial</div>
       {official ? (
-        <CombinationBalls combination={official} compareWith={allOurs} large={large} tone="official" />
+        <CombinationBalls combination={official} compareWith={allOurs} large={large} tone="official" showJoker={jokerPlayed === true} />
       ) : (
-        <span className="text-[11px] text-slate-500 italic">Pendiente de publicación (se recupera a las 23:00).</span>
+        <span className="text-[11px] text-slate-500 italic">Pendiente de celebración / publicación (se recupera a las 23:00).</span>
       )}
     </div>
   );

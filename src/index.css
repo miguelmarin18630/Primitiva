@@ -17,6 +17,12 @@ body {
   background-color: #0f172a;
 }
 
+main,
+section,
+article {
+  min-width: 0;
+}
+
 /* Barra de pestañas: se desplaza por dentro, nunca desplaza la página. */
 .no-scrollbar {
   touch-action: pan-x pan-y;

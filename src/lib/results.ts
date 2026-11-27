@@ -96,7 +96,11 @@ export function applyOfficialResults(
     const official = results.get(draw.date);
     if (!official) return draw;
     updated += 1;
-    return { ...draw, officialCombination: official };
+    return {
+      ...draw,
+      status: 'jugado' as const,
+      officialCombination: draw.jokerPlayed ? official : { ...official, joker: undefined },
+    };
   });
   return { syndicate: updated ? { ...syndicate, draws } : syndicate, updated };
 }

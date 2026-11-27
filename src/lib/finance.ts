@@ -286,11 +286,13 @@ export function sanitizeTicketExtraction(raw: unknown): TicketExtraction {
   if (rawReintegro >= 0 && rawReintegro <= 9) {
     result.reintegro = rawReintegro;
   }
-  if (typeof source.joker === 'string' && source.joker.trim()) {
-    result.joker = source.joker.trim();
-  }
-  if (typeof source.jokerPlayed === 'boolean') {
-    result.jokerPlayed = source.jokerPlayed;
+  const rawJokerDigits = typeof source.joker === 'string' ? source.joker.replace(/\s+/g, '').trim() : '';
+  const explicitlyPlayed = source.jokerPlayed === true;
+  if (explicitlyPlayed && /^\d{7}$/.test(rawJokerDigits)) {
+    result.jokerPlayed = true;
+    result.joker = rawJokerDigits;
+  } else {
+    result.jokerPlayed = false;
   }
 
   // Sanitizar líneas de apuestas (múltiples bloques o apuestas del boleto)
@@ -324,7 +326,10 @@ export function sanitizeTicketExtraction(raw: unknown): TicketExtraction {
 
   const combination = normalizeCombination(source.winningCombination);
   if (combination) {
-    result.winningCombination = combination;
+    result.winningCombination = {
+      ...combination,
+      joker: result.jokerPlayed ? result.joker : undefined,
+    };
     if (result.reintegro === undefined && combination.reintegro >= 0 && combination.reintegro <= 9) {
       result.reintegro = combination.reintegro;
     }
@@ -340,7 +345,7 @@ export function sanitizeTicketExtraction(raw: unknown): TicketExtraction {
       numbers: result.lines[0].numbers,
       complementario: 0,
       reintegro: result.lines[0].reintegro ?? (result.reintegro ?? 0),
-      joker: result.joker,
+      joker: result.jokerPlayed ? result.joker : undefined,
     };
   }
 
@@ -397,6 +402,16 @@ export function normalizeSyndicate(raw: unknown): SyndicateData {
       ? verified.notes
       : (rawNotes || undefined);
 
+    const jokerPlayed = typeof draw.jokerPlayed === 'boolean' ? draw.jokerPlayed : false;
+    const rawWinning = verified ? undefined : normalizeCombination(draw.winningCombination);
+    const rawOfficial = normalizeCombination(draw.officialCombination) ?? verified?.officialCombination;
+    const cleanWinning = rawWinning
+      ? { ...rawWinning, joker: jokerPlayed ? rawWinning.joker : undefined }
+      : undefined;
+    const cleanOfficial = rawOfficial
+      ? { ...rawOfficial, joker: jokerPlayed ? rawOfficial.joker : undefined }
+      : undefined;
+
     return {
       id,
       index: numberOr(draw.index, index + 1),
@@ -407,12 +422,12 @@ export function normalizeSyndicate(raw: unknown): SyndicateData {
       prizeWon: Math.max(0, roundMoney(numberOr(draw.prizeWon, 0))),
       notes: cleanNotes,
       lines,
-      winningCombination: verified ? undefined : normalizeCombination(draw.winningCombination),
-      officialCombination: normalizeCombination(draw.officialCombination) ?? verified?.officialCombination,
-      jokerPlayed: typeof draw.jokerPlayed === 'boolean' ? draw.jokerPlayed : (verified ? false : undefined),
+      winningCombination: cleanWinning,
+      officialCombination: cleanOfficial,
+      jokerPlayed,
       createdBy: draw.createdBy === 'socio' || draw.createdBy === 'admin' ? draw.createdBy : undefined,
       ticketImage: stringOr(draw.ticketImage) || verified?.ticketImage || undefined,
-      status: (draw.status === 'pendiente' ? 'pendiente' : 'jugado') as DrawRecord['status'],
+      status: (!cleanOfficial && (draw.status === 'pendiente' || date >= todayISO()) ? 'pendiente' : 'jugado') as DrawRecord['status'],
     };
   }).sort((a, b) => b.date.localeCompare(a.date) || b.index - a.index);
 
