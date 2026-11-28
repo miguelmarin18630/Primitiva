@@ -67,7 +67,7 @@ async function startServer(): Promise<void> {
       saveStore();
     },
     geminiApiKey: process.env.GEMINI_API_KEY,
-    geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    geminiModel: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
   };
 
   // Una única implementación de la API para local y para la nube.

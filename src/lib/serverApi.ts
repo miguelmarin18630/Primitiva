@@ -252,10 +252,24 @@ async function authenticate(req: ApiRequest, env: ApiEnvironment): Promise<AuthR
   return { payload, store };
 }
 
+const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+
+function resolveGeminiModel(configured?: string): string {
+  const clean = (configured || '').trim().replace(/^models\//, '');
+  if (!clean || clean === 'gemini-2.5-flash' || clean === 'gemini-2.0-flash' || clean === 'gemini-1.5-flash') {
+    return DEFAULT_GEMINI_MODEL;
+  }
+  return clean;
+}
+
 async function callGemini(apiKey: string, model: string, payload: unknown): Promise<string> {
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
+      'User-Agent': 'aistudio-build',
+    },
     body: JSON.stringify(payload),
   });
   const data = asObject(await response.json().catch(() => null));
@@ -266,7 +280,10 @@ async function callGemini(apiKey: string, model: string, payload: unknown): Prom
   const candidates = Array.isArray(data.candidates) ? data.candidates : [];
   const content = asObject(asObject(candidates[0]).content);
   const parts = Array.isArray(content.parts) ? content.parts : [];
-  return parts.map((part) => (asObject(part).text as string) || '').join('');
+  return parts
+    .filter((part) => !asObject(part).thought)
+    .map((part) => (asObject(part).text as string) || '')
+    .join('');
 }
 
 const TICKET_PROMPT = `Analiza esta imagen de un boleto o resguardo oficial de la Lotería Primitiva de España.
@@ -475,11 +492,14 @@ export async function handleApiRequest(req: ApiRequest, env: ApiEnvironment): Pr
     const mimeType = matches?.[1] || 'image/jpeg';
     const data = matches?.[2] || imageBase64;
     try {
-      const text = await callGemini(apiKey, env.geminiModel || 'gemini-2.5-flash', {
+      const model = resolveGeminiModel(env.geminiModel);
+      const text = await callGemini(apiKey, model, {
         contents: [{ parts: [{ inline_data: { mime_type: mimeType, data } }, { text: TICKET_PROMPT }] }],
+        generationConfig: { responseMimeType: 'application/json' },
       });
       const cleaned = (text || '{}').replace(/```json/gi, '').replace(/```/g, '').trim();
-      return { status: 200, body: { success: true, data: JSON.parse(cleaned) } };
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      return { status: 200, body: { success: true, data: JSON.parse(jsonMatch ? jsonMatch[0] : cleaned) } };
     } catch (error) {
       return { status: 500, body: { error: error instanceof Error ? error.message : 'Error al analizar la foto del boleto con IA.' } };
     }

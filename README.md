@@ -35,7 +35,7 @@ npm start        # sirve dist/ con la API (NODE_ENV=production)
 npm run lint     # comprobación de tipos (app + Worker)
 ```
 
-Variables de entorno locales (ver `.env.example`): `PORT`, `GEMINI_API_KEY` y, opcionalmente, `GEMINI_MODEL` (por defecto `gemini-2.5-flash`).
+Variables de entorno locales (ver `.env.example`): `PORT`, `GEMINI_API_KEY` y, opcionalmente, `GEMINI_MODEL` (por defecto `gemini-3.8-flash`).
 
 ## Despliegue en Cloudflare (sin dejar el ordenador encendido)
 

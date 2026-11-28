@@ -19,5 +19,5 @@
   "triggers": {
     "crons": ["0 21 * * *", "0 22 * * *"]
   },
-  "vars": { "GEMINI_MODEL": "gemini-2.5-flash" }
+  "vars": { "GEMINI_MODEL": "gemini-3.8-flash" }
 }
