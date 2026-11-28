@@ -200,7 +200,7 @@ export function isValidWinningCombination(value: WinningCombination): boolean {
 }
 
 /** Convierte un objeto arbitrario en una combinación válida y ordenada, o undefined. */
-export function normalizeCombination(value: unknown): WinningCombination | undefined {
+export function normalizeCombination(value: unknown, allowZeroComplementario = false): WinningCombination | undefined {
   if (!value || typeof value !== 'object') return undefined;
   const candidate = value as Partial<WinningCombination>;
   const combination: WinningCombination = {
@@ -212,6 +212,17 @@ export function normalizeCombination(value: unknown): WinningCombination | undef
         ? candidate.joker.trim()
         : undefined,
   };
+  if (allowZeroComplementario && combination.complementario === 0) {
+    const validBet =
+      isValidBetLineNumbers(combination.numbers) &&
+      Number.isInteger(combination.reintegro) &&
+      combination.reintegro >= 0 &&
+      combination.reintegro <= 9 &&
+      (!combination.joker || /^\d{1,9}$/.test(combination.joker));
+    return validBet
+      ? { ...combination, numbers: [...combination.numbers].sort((a, b) => a - b) }
+      : undefined;
+  }
   return isValidWinningCombination(combination)
     ? { ...combination, numbers: [...combination.numbers].sort((a, b) => a - b) }
     : undefined;
@@ -245,7 +256,11 @@ export function normalizeBetLines(value: unknown): BetLine[] | undefined {
 export function drawBetLines(draw: DrawRecord): BetLine[] {
   if (draw.lines?.length) return draw.lines;
   if (draw.winningCombination) {
-    return [{ line: 1, numbers: [...draw.winningCombination.numbers].sort((a, b) => a - b) }];
+    return [{
+      line: 1,
+      numbers: [...draw.winningCombination.numbers].sort((a, b) => a - b),
+      reintegro: draw.winningCombination.reintegro,
+    }];
   }
   return [];
 }
@@ -324,7 +339,7 @@ export function sanitizeTicketExtraction(raw: unknown): TicketExtraction {
     }
   }
 
-  const combination = normalizeCombination(source.winningCombination);
+  const combination = normalizeCombination(source.winningCombination, true);
   if (combination) {
     result.winningCombination = {
       ...combination,
@@ -403,7 +418,7 @@ export function normalizeSyndicate(raw: unknown): SyndicateData {
       : (rawNotes || undefined);
 
     const jokerPlayed = typeof draw.jokerPlayed === 'boolean' ? draw.jokerPlayed : false;
-    const rawWinning = verified ? undefined : normalizeCombination(draw.winningCombination);
+    const rawWinning = verified ? undefined : normalizeCombination(draw.winningCombination, true);
     const rawOfficial = normalizeCombination(draw.officialCombination) ?? verified?.officialCombination;
     const cleanWinning = rawWinning
       ? { ...rawWinning, joker: jokerPlayed ? rawWinning.joker : undefined }

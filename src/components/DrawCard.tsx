@@ -1,4 +1,4 @@
-import { Camera, Edit2, ImageIcon, Trash2 } from 'lucide-react';
+import { Camera, Edit2, ImageIcon, Sparkles, Trash2 } from 'lucide-react';
 import type { DrawRecord } from '../data/initialSyndicateData';
 import { drawBetLines, money } from '../lib/finance';
 import { CombinationComparison } from './ui';
@@ -9,17 +9,20 @@ interface DrawCardProps {
   canUploadTicket: boolean;
   isAdmin: boolean;
   canDelete: boolean;
+  isExtracting?: boolean;
   onViewTicket: () => void;
   onUploadTicket: () => void;
+  onExtractFromTicket?: () => void;
   onEditCombination: (kind: 'bet' | 'official', line?: number) => void;
   onDelete: () => void;
 }
 
 /** Misma tarjeta para el resumen y para la vista completa de sorteos. */
 export function DrawCard({
-  draw, compact = false, canUploadTicket, isAdmin, canDelete,
-  onViewTicket, onUploadTicket, onEditCombination, onDelete,
+  draw, compact = false, canUploadTicket, isAdmin, canDelete, isExtracting = false,
+  onViewTicket, onUploadTicket, onExtractFromTicket, onEditCombination, onDelete,
 }: DrawCardProps) {
+  const bets = drawBetLines(draw);
   return (
     <div
       className={`min-w-0 w-full overflow-hidden ${draw.prizeWon > 0 ? 'border-amber-500/40 bg-amber-950/10' : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'} ${compact ? 'p-3.5 sm:p-4 rounded-xl' : 'p-3.5 sm:p-5 rounded-2xl'} border transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3`}
@@ -28,7 +31,7 @@ export function DrawCard({
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
           <span className="font-mono font-bold text-slate-400">#{draw.index}</span>
           <span className="font-semibold text-white">{draw.dayOfWeek} · {draw.displayDate}</span>
-          <span className="text-slate-400">· {drawBetLines(draw).length} apuestas × 1 € = {money(draw.betCost)}</span>
+          <span className="text-slate-400">· {bets.length > 0 ? `${bets.length} apuestas × 1 € = ` : ''}{money(draw.betCost)}</span>
           {draw.prizeWon > 0 && (
             <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30">
               +{money(draw.prizeWon)}
@@ -44,7 +47,7 @@ export function DrawCard({
 
         <div className="flex flex-wrap items-start gap-3 pt-0.5 min-w-0">
           <CombinationComparison
-            bets={drawBetLines(draw)}
+            bets={bets}
             official={draw.officialCombination}
             jokerPlayed={draw.jokerPlayed}
             large={!compact}
@@ -75,6 +78,17 @@ export function DrawCard({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 shrink-0 self-end sm:self-center max-w-full">
+        {draw.ticketImage && bets.length === 0 && canUploadTicket && onExtractFromTicket && (
+          <button
+            type="button"
+            disabled={isExtracting}
+            onClick={onExtractFromTicket}
+            className="px-2.5 py-1.5 text-xs font-semibold text-amber-200 bg-amber-500/15 hover:bg-amber-500/25 disabled:opacity-60 border border-amber-500/40 rounded-lg transition-colors flex items-center gap-1.5"
+          >
+            <Sparkles className={`w-3.5 h-3.5 text-amber-400 shrink-0 ${isExtracting ? 'animate-spin' : ''}`} />
+            <span>{isExtracting ? 'Leyendo...' : 'Leer apuestas IA'}</span>
+          </button>
+        )}
         {draw.ticketImage ? (
           <button onClick={onViewTicket} className="px-2.5 py-1.5 text-xs font-medium text-emerald-300 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/60 rounded-lg transition-colors flex items-center gap-1.5">
             <ImageIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />

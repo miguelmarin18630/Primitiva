@@ -114,6 +114,7 @@ export default function App() {
   const [showDistributeModal, setShowDistributeModal] = useState(false);
   const [copiedNotification, setCopiedNotification] = useState(false);
   const [viewingTicketDraw, setViewingTicketDraw] = useState<DrawRecord | null>(null);
+  const [extractingDrawId, setExtractingDrawId] = useState<string | null>(null);
   const [editingWinningDraw, setEditingWinningDraw] = useState<DrawRecord | null>(null);
   const [editingCombinationKind, setEditingCombinationKind] = useState<'bet' | 'official'>('bet');
   const [editingBetLine, setEditingBetLine] = useState(1);
@@ -654,7 +655,62 @@ export default function App() {
     }
   };
 
-  const handleTicketPhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
+  /** Comprime fotos grandes del móvil (~4-8 MB) a ~150 KB nítidos para IA y Cloudflare SQLite. */
+  const compressImageToDataUrl = (source: File | string): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const loadFromUrl = (url: string, revoke?: boolean) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          try {
+            const maxDim = 1400;
+            let { width, height } = img;
+            if (width > maxDim || height > maxDim) {
+              const scale = maxDim / Math.max(width, height);
+              width = Math.round(width * scale);
+              height = Math.round(height * scale);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('Canvas no disponible');
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL('image/jpeg', 0.84);
+            if (revoke) URL.revokeObjectURL(url);
+            resolve(compressed);
+          } catch {
+            if (revoke) URL.revokeObjectURL(url);
+            if (typeof source === 'string') {
+              resolve(source);
+            } else {
+              const reader = new FileReader();
+              reader.onload = () => resolve(String(reader.result || ''));
+              reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+              reader.readAsDataURL(source);
+            }
+          }
+        };
+        img.onerror = () => {
+          if (revoke) URL.revokeObjectURL(url);
+          if (typeof source === 'string' && source.startsWith('data:')) {
+            resolve(source);
+          } else {
+            reject(new Error('No se pudo cargar la imagen del boleto.'));
+          }
+        };
+        img.src = url;
+      };
+
+      if (typeof source === 'string') {
+        loadFromUrl(source, false);
+      } else {
+        const objectUrl = URL.createObjectURL(source);
+        loadFromUrl(objectUrl, true);
+      }
+    });
+
+  const handleTicketPhotoChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -662,15 +718,15 @@ export default function App() {
       showToast('error', 'Selecciona una imagen de menos de 16 MB.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = async (loadEvt) => {
-      const dataUrl = loadEvt.target?.result as string | undefined;
+    try {
+      const dataUrl = await compressImageToDataUrl(file);
       if (!dataUrl) return;
       setNewDrawTicketImage(dataUrl);
       setExtractionStatus(null);
       await processTicketWithAi(dataUrl);
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      showToast('error', 'No se pudo procesar la foto del boleto.');
+    }
   };
 
   const openNewDrawModal = (presetLines?: BetLine[] | unknown) => {
@@ -1031,6 +1087,7 @@ export default function App() {
   };
 
   const handleAiExtractAndAutoFill = async (drawId: string, dataUrl: string) => {
+    setExtractingDrawId(drawId);
     showToast('info', 'Leyendo boleto y recuperando los números jugados por la peña...', 'IA Procesando');
     try {
       const response = await apiFetch(
@@ -1048,14 +1105,22 @@ export default function App() {
         return;
       }
       const extracted = sanitizeTicketExtraction(result.data);
+      const extractedCount = extracted.lines?.length ?? (extracted.winningCombination ? 1 : 0);
+      if (extractedCount === 0) {
+        showToast(
+          'info',
+          'Foto guardada. La IA no pudo leer los números jugados con claridad; puedes introducirlos pulsando el lápiz de editar apuestas.',
+          'Lectura IA',
+        );
+        return;
+      }
+
       const ok = await commit((prev) => ({
         ...prev,
         draws: prev.draws.map((draw) => draw.id !== drawId ? draw : {
           ...draw,
           ticketImage: dataUrl,
-          date: extracted.date ?? draw.date,
-          displayDate: extracted.date ? formatDateShort(extracted.date) : draw.displayDate,
-          dayOfWeek: extracted.dayOfWeek ?? draw.dayOfWeek,
+          // Conserva la fecha y día del sorteo ya creado (clave en boletos de jueves + sábado).
           betCost: extracted.lines ? betLinesCost(extracted.lines) : (extracted.betCost ?? draw.betCost),
           lines: extracted.lines ?? draw.lines,
           jokerPlayed: extracted.jokerPlayed === true,
@@ -1066,18 +1131,33 @@ export default function App() {
       showToast(
         ok ? 'success' : 'error',
         ok
-          ? extracted.winningCombination
-            ? 'Boleto leído y nuestra apuesta actualizada.'
-            : 'Boleto guardado. La IA no pudo leer los números jugados; comprueba la apuesta manualmente.'
-          : 'No se pudo guardar la información extraída.',
-        ok ? 'IA' : 'Error',
+          ? `Boleto leído: ${extractedCount} apuesta${extractedCount > 1 ? 's' : ''} guardada${extractedCount > 1 ? 's' : ''}.`
+          : 'No se pudo guardar la información extraída en el servidor.',
+        ok ? 'Apuestas Guardadas' : 'Error',
       );
     } catch (error: any) {
       showToast('error', error.message || 'Error al conectar con la IA para leer el boleto.');
+    } finally {
+      setExtractingDrawId(null);
     }
   };
 
-  const handleFileInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleReExtractDrawTicket = async (draw: DrawRecord) => {
+    if (!draw.ticketImage) return;
+    if (!canAddBets) {
+      showToast('error', 'Solo usuarios autorizados pueden leer apuestas con IA.');
+      return;
+    }
+    if (!isAdmin && !(await ensureSocioAuth())) return;
+    try {
+      const dataUrl = await compressImageToDataUrl(draw.ticketImage);
+      await handleAiExtractAndAutoFill(draw.id, dataUrl);
+    } catch {
+      showToast('error', 'No se pudo preparar la foto del boleto para su lectura.');
+    }
+  };
+
+  const handleFileInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     const drawId = targetDrawIdForUpload;
     event.target.value = ''; // permite volver a seleccionar el mismo archivo
@@ -1087,9 +1167,8 @@ export default function App() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = async (loadEvent) => {
-      const dataUrl = loadEvent.target?.result as string | undefined;
+    try {
+      const dataUrl = await compressImageToDataUrl(file);
       if (!dataUrl) return;
       const ok = await commit((prev) => ({
         ...prev,
@@ -1101,8 +1180,9 @@ export default function App() {
       }
       showToast('success', 'Foto del boleto guardada. Iniciando lectura automática...', 'Boleto Adjuntado');
       await handleAiExtractAndAutoFill(drawId, dataUrl);
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      showToast('error', 'No se pudo procesar la foto del boleto.');
+    }
   };
 
   const handleDeleteTicketPhoto = async (drawId: string) => {
@@ -1711,8 +1791,10 @@ export default function App() {
       canUploadTicket={canAddBets}
       isAdmin={isAdmin}
       canDelete={canDeleteDraw(draw)}
+      isExtracting={extractingDrawId === draw.id}
       onViewTicket={() => setViewingTicketDraw(draw)}
       onUploadTicket={() => void handleUploadTicketPhoto(draw.id)}
+      onExtractFromTicket={() => void handleReExtractDrawTicket(draw)}
       onEditCombination={(kind, line) => handleOpenWinningModal(draw, kind, line)}
       onDelete={() => void handleDeleteDraw(draw)}
     />
@@ -3125,9 +3207,20 @@ export default function App() {
               <img src={viewingTicketDraw.ticketImage} alt={`Boleto sorteo #${viewingTicketDraw.index}`} className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg" />
             ) : <div className="text-xs text-slate-400">No hay foto disponible para este boleto.</div>}
           </div>
-          <div className="flex items-center justify-between text-xs text-slate-300 pt-2 border-t border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300 pt-2 border-t border-slate-800">
             <div>{viewingTicketDraw.prizeWon > 0 && <span className="text-amber-400 font-bold">¡Premio: {money(viewingTicketDraw.prizeWon)}!</span>}</div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {canAddBets && viewingTicketDraw.ticketImage && (
+                <button
+                  type="button"
+                  disabled={extractingDrawId === viewingTicketDraw.id}
+                  onClick={() => void handleReExtractDrawTicket(viewingTicketDraw)}
+                  className="px-3 py-1.5 text-xs font-semibold text-amber-200 bg-amber-500/15 hover:bg-amber-500/25 disabled:opacity-60 rounded-lg border border-amber-500/40 flex items-center gap-1.5"
+                >
+                  <Sparkles className={`w-3.5 h-3.5 text-amber-400 ${extractingDrawId === viewingTicketDraw.id ? 'animate-spin' : ''}`} />
+                  <span>{extractingDrawId === viewingTicketDraw.id ? 'Leyendo...' : 'Leer apuestas IA'}</span>
+                </button>
+              )}
               {isAdmin && viewingTicketDraw.ticketImage && (
                 <button onClick={() => void handleDeleteTicketPhoto(viewingTicketDraw.id)} className="px-3 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-950/40 rounded-lg border border-red-500/20">Eliminar Foto</button>
               )}
