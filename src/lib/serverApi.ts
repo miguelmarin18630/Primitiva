@@ -58,7 +58,7 @@ const TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
  * 2 = datos del Excel, con José Ramón al corriente con 22 € reales.
  * 3 = cuota mensual de 5 €, tablero por meses y aportaciones extras.
  */
-export const CURRENT_DATA_VERSION = 4;
+export const CURRENT_DATA_VERSION = 5;
 
 function randomHex(): string {
   const bytes = new Uint8Array(32);
@@ -137,6 +137,31 @@ export function migrateStore(store: StoreData): { store: StoreData; changed: boo
           officialCombination: draw.officialCombination
             ? { ...draw.officialCombination, joker: undefined }
             : undefined,
+        };
+      }),
+    };
+  }
+
+  if (version < 5) {
+    // Corrige posible errata 26/11/29 -> 26/11/26 y rellena la combinación oficial del jueves 26/11/2026.
+    const official26Nov2026: WinningCombination = {
+      numbers: [4, 8, 15, 29, 45, 48],
+      complementario: 6,
+      reintegro: 2,
+    };
+    syndicate = {
+      ...syndicate,
+      draws: syndicate.draws.map((draw) => {
+        if (draw.date !== '2026-11-26' && draw.date !== '2029-11-26') return draw;
+        return {
+          ...draw,
+          date: '2026-11-26',
+          displayDate: '26/11/26',
+          dayOfWeek: 'Jueves',
+          status: 'jugado',
+          officialCombination: draw.officialCombination ?? (
+            draw.jokerPlayed ? { ...official26Nov2026, joker: '5801896' } : official26Nov2026
+          ),
         };
       }),
     };
@@ -476,6 +501,23 @@ export async function handleApiRequest(req: ApiRequest, env: ApiEnvironment): Pr
     } else {
       store.syndicate = incoming;
     }
+
+    // Si se ha guardado algún sorteo de hoy o anterior sin combinación oficial, la consultamos al momento.
+    const todayMadrid = madridDateTime().dateKey;
+    const hasPastWithoutOfficial = store.syndicate.draws.some(
+      (draw) => !draw.officialCombination && draw.date <= todayMadrid,
+    );
+    if (hasPastWithoutOfficial) {
+      try {
+        const refreshed = await refreshOfficialResults(store.syndicate);
+        if (refreshed.updated > 0) {
+          store.syndicate = refreshed.syndicate;
+        }
+      } catch (error) {
+        console.error('No se pudieron comprobar resultados oficiales al guardar:', error);
+      }
+    }
+
     await env.writeStore(store);
     return { status: 200, body: { success: true, syndicate: store.syndicate } };
   }

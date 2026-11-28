@@ -102,7 +102,7 @@ export function useSyncedSyndicate({ getAuth, onAuthError }: Options) {
 
       const task = async (): Promise<boolean> => {
         try {
-          await apiFetch(
+          const response = await apiFetch(
             '/api/syndicate',
             {
               method: 'POST',
@@ -111,8 +111,14 @@ export function useSyncedSyndicate({ getAuth, onAuthError }: Options) {
             },
             auth,
           );
+          const data = await response.json().catch(() => null);
           // Sólo se considera limpio cuando no queden más escrituras en cola.
           dirtyRef.current = pendingRef.current > 1;
+          if (!dirtyRef.current && data?.syndicate && mountedRef.current) {
+            const normalized = normalizeSyndicate(data.syndicate);
+            stateRef.current = normalized;
+            setSyndicate(normalized);
+          }
           if (mountedRef.current) setServerError(false);
           markSynced();
           return true;

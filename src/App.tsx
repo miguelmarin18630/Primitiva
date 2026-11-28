@@ -2162,13 +2162,26 @@ export default function App() {
                       Boleto ya registrado cuya combinación oficial aún no se ha celebrado. El resultado se comprobará automáticamente a las 23:00.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => { setActiveTab('sorteos'); setDrawMonthFilter('all'); setOnlyPrizesFilter(false); }}
-                    className="px-3 py-1.5 text-xs font-semibold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg transition-colors shrink-0"
-                  >
-                    Ver todos los sorteos
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        disabled={isRefreshingResults}
+                        onClick={() => void handleRefreshResults()}
+                        className="px-3 py-1.5 text-xs font-semibold text-sky-200 bg-sky-500/15 hover:bg-sky-500/25 disabled:opacity-60 border border-sky-500/35 rounded-lg transition-colors flex items-center gap-1.5"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingResults ? 'animate-spin' : ''}`} />
+                        <span>{isRefreshingResults ? 'Comprobando...' : 'Actualizar resultados'}</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => { setActiveTab('sorteos'); setDrawMonthFilter('all'); setOnlyPrizesFilter(false); }}
+                      className="px-3 py-1.5 text-xs font-semibold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg transition-colors shrink-0"
+                    >
+                      Ver todos los sorteos
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-3">
                   {upcomingDraws.map((draw) => renderDrawCard(draw, false))}
