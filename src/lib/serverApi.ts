@@ -253,16 +253,27 @@ async function authenticate(req: ApiRequest, env: ApiEnvironment): Promise<AuthR
 }
 
 const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+const FALLBACK_GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-4-hydrogen', 'gemini-3.1-flash-lite'];
 
-function resolveGeminiModel(configured?: string): string {
+function resolveGeminiModels(configured?: string): string[] {
   const clean = (configured || '').trim().replace(/^models\//, '');
-  if (!clean || clean === 'gemini-2.5-flash' || clean === 'gemini-2.0-flash' || clean === 'gemini-1.5-flash') {
-    return DEFAULT_GEMINI_MODEL;
-  }
-  return clean;
+  const primary = !clean || clean === 'gemini-2.5-flash' || clean === 'gemini-2.0-flash' || clean === 'gemini-1.5-flash'
+    ? DEFAULT_GEMINI_MODEL
+    : clean;
+  return [...new Set([primary, ...FALLBACK_GEMINI_MODELS])];
 }
 
-async function callGemini(apiKey: string, model: string, payload: unknown): Promise<string> {
+const waitMs = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+class GeminiHttpError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+async function callGeminiOnce(apiKey: string, model: string, payload: unknown): Promise<string> {
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
     headers: {
@@ -275,7 +286,8 @@ async function callGemini(apiKey: string, model: string, payload: unknown): Prom
   const data = asObject(await response.json().catch(() => null));
   if (!response.ok) {
     const error = asObject(data.error);
-    throw new Error(typeof error.message === 'string' ? error.message : `Gemini devolvió ${response.status}.`);
+    const msg = typeof error.message === 'string' ? error.message : `Gemini devolvió ${response.status}.`;
+    throw new GeminiHttpError(response.status, msg);
   }
   const candidates = Array.isArray(data.candidates) ? data.candidates : [];
   const content = asObject(asObject(candidates[0]).content);
@@ -284,6 +296,36 @@ async function callGemini(apiKey: string, model: string, payload: unknown): Prom
     .filter((part) => !asObject(part).thought)
     .map((part) => (asObject(part).text as string) || '')
     .join('');
+}
+
+async function callGeminiWithFallback(apiKey: string, configuredModel: string | undefined, payload: unknown): Promise<string> {
+  const models = resolveGeminiModels(configuredModel);
+  let lastError: unknown;
+
+  for (let round = 0; round < 2; round += 1) {
+    for (const model of models) {
+      try {
+        return await callGeminiOnce(apiKey, model, payload);
+      } catch (error) {
+        lastError = error;
+        const status = error instanceof GeminiHttpError ? error.status : 0;
+        const msg = error instanceof Error ? error.message.toLowerCase() : '';
+        // Si la clave de API es inválida o no tiene permisos, no reintentar otros modelos.
+        if (status === 401 || status === 403 || msg.includes('api key')) {
+          throw error;
+        }
+        // En 503 (alta demanda), 429, 404 o 5xx probamos automáticamente el siguiente modelo.
+        const retryable = status === 404 || status === 429 || status >= 500 || msg.includes('high demand') || msg.includes('overloaded');
+        if (!retryable) throw error;
+      }
+    }
+    if (round === 0) await waitMs(1200);
+  }
+
+  if (lastError instanceof GeminiHttpError && (lastError.status === 503 || lastError.status === 429)) {
+    throw new Error('Los servidores de Gemini están temporalmente saturados por alta demanda. Inténtalo de nuevo en unos segundos.');
+  }
+  throw lastError instanceof Error ? lastError : new Error('No se pudo analizar la foto del boleto con IA.');
 }
 
 const TICKET_PROMPT = `Analiza esta imagen de un boleto o resguardo oficial de la Lotería Primitiva de España.
@@ -492,8 +534,7 @@ export async function handleApiRequest(req: ApiRequest, env: ApiEnvironment): Pr
     const mimeType = matches?.[1] || 'image/jpeg';
     const data = matches?.[2] || imageBase64;
     try {
-      const model = resolveGeminiModel(env.geminiModel);
-      const text = await callGemini(apiKey, model, {
+      const text = await callGeminiWithFallback(apiKey, env.geminiModel, {
         contents: [{ parts: [{ inline_data: { mime_type: mimeType, data } }, { text: TICKET_PROMPT }] }],
         generationConfig: { responseMimeType: 'application/json' },
       });
